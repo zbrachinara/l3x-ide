@@ -17,6 +17,8 @@ impl Default for Matrix {
 }
 
 impl Matrix {
+    
+
     pub fn draw(&self, offset: Vec2, cell_size: f32, scale: f32) {
         for (i, j) in (0..self.dims.x).cartesian_product(0..self.dims.y) {
             let lower = (Vec2::new(i as f32, j as f32) * cell_size + offset) * scale;

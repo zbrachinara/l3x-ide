@@ -23,9 +23,9 @@ async fn main() {
     let mut rmb_position = None;
 
     loop {
+        let logical = (mouse() - offset) / CELL_SIZE;
         if is_mouse_button_down(MouseButton::Left) {
-            let logical = (mouse() - offset) / CELL_SIZE + Vec2::splat(0.5);
-            matrix.set_dims(logical.as_ivec2())
+            matrix.set_dims((logical + Vec2::splat(0.5)).as_ivec2())
         }
 
         // panning
