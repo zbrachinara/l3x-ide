@@ -27,6 +27,8 @@ async fn main() {
     let mut input_driver = InputDriver::default();
 
     loop {
+        clear_background(BLACK);
+
         input_driver.update();
         let logical = (mouse() - offset) / CELL_SIZE;
         if is_mouse_button_down(MouseButton::Left) {
@@ -54,7 +56,8 @@ async fn main() {
         egui_macroquad::ui(|ctx| {
             egui::Window::new("Menu")
                 .title_bar(false)
-                .anchor(Align2::RIGHT_TOP, (-50.0, 50.0)).show(ctx, |ui| {
+                .anchor(Align2::RIGHT_TOP, (-50.0, 50.0))
+                .show(ctx, |ui| {
                     ui.label("Hello");
                 });
         });
