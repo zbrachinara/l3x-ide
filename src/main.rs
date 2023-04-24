@@ -1,30 +1,31 @@
-use itertools::Itertools;
 use macroquad::prelude::*;
 use macroquad::window::next_frame;
 
+use crate::matrix::Matrix;
+
+mod matrix;
+
+fn mouse() -> Vec2 {
+    let (mouse_x, mouse_y) = mouse_position();
+    Vec2 {
+        x: mouse_x,
+        y: mouse_y,
+    }
+}
+
 #[macroquad::main("L3X IDE")]
 async fn main() {
-    let mut matrix_rows = 1;
-    let mut matrix_cols = 1;
+    let mut matrix = Matrix::default();
 
-    const CELL_SIZE: usize = 60;
-    let mut offset_x = 100.0;
-    let mut offset_y = 100.0;
+    const CELL_SIZE: f32 = 60.0;
+    let mut offset = Vec2 { x: 100.0, y: 100.0 };
 
     let mut rmb_position = None;
 
     loop {
         if is_mouse_button_down(MouseButton::Left) {
-            let (mouse_x, mouse_y) = mouse_position();
-            let logical_x = (mouse_x - offset_x) / CELL_SIZE as f32 + 0.5;
-            let logical_y = (mouse_y - offset_y) / CELL_SIZE as f32 + 0.5;
-
-            if logical_x > 0.0 {
-                matrix_rows = std::cmp::max(logical_x as usize, 1);
-            }
-            if logical_y > 0.0 {
-                matrix_cols = std::cmp::max(logical_y as usize, 1);
-            }
+            let logical = (mouse() - offset) / CELL_SIZE + Vec2::splat(0.5);
+            matrix.set_dims(logical.as_ivec2())
         }
 
         // panning
@@ -37,24 +38,15 @@ async fn main() {
                 let difference_x = new_x - pos_x;
                 let difference_y = new_y - pos_y;
 
-                offset_x += difference_x;
-                offset_y += difference_y;
+                offset.x += difference_x;
+                offset.y += difference_y;
                 rmb_position = Some(mouse_position());
             } else {
                 rmb_position = Some(mouse_position());
             }
         }
 
-        for (i, j) in (0..matrix_rows).cartesian_product(0..matrix_cols) {
-            draw_rectangle_lines(
-                (i * CELL_SIZE) as f32 + offset_x,
-                (j * CELL_SIZE) as f32 + offset_y,
-                CELL_SIZE as f32,
-                CELL_SIZE as f32,
-                2.0,
-                WHITE,
-            )
-        }
+        matrix.draw(offset, CELL_SIZE, 1.0);
 
         next_frame().await
     }
