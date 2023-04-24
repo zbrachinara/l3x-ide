@@ -1,11 +1,13 @@
 use macroquad::prelude::*;
 use macroquad::window::next_frame;
 
+use crate::input::InputDriver;
 use crate::matrix::Matrix;
 
+mod input;
 mod matrix;
 
-fn mouse() -> Vec2 {
+pub fn mouse() -> Vec2 {
     let (mouse_x, mouse_y) = mouse_position();
     Vec2 {
         x: mouse_x,
@@ -21,8 +23,10 @@ async fn main() {
     let mut offset = Vec2 { x: 100.0, y: 100.0 };
 
     let mut rmb_position = None;
+    let mut input_driver = InputDriver::default();
 
     loop {
+        input_driver.update();
         let logical = (mouse() - offset) / CELL_SIZE;
         if is_mouse_button_down(MouseButton::Left) {
             matrix.set_dims((logical + Vec2::splat(0.5)).as_ivec2())
