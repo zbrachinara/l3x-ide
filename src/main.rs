@@ -1,3 +1,4 @@
+use egui::Align2;
 use macroquad::prelude::*;
 use macroquad::window::next_frame;
 
@@ -50,7 +51,16 @@ async fn main() {
             }
         }
 
+        egui_macroquad::ui(|ctx| {
+            egui::Window::new("Menu")
+                .title_bar(false)
+                .anchor(Align2::RIGHT_TOP, (-50.0, 50.0)).show(ctx, |ui| {
+                    ui.label("Hello");
+                });
+        });
+
         matrix.draw(offset, CELL_SIZE, 1.0);
+        egui_macroquad::draw();
 
         next_frame().await
     }
