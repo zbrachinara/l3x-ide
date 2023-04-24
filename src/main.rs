@@ -7,9 +7,9 @@ async fn main() {
     let mut matrix_rows = 1;
     let mut matrix_cols = 1;
 
-    const CELL_SIZE: usize = 40;
-    let mut offset_x = 300.0;
-    let mut offset_y = 300.0;
+    const CELL_SIZE: usize = 60;
+    let mut offset_x = 100.0;
+    let mut offset_y = 100.0;
 
     let mut rmb_position = None;
 
