@@ -19,8 +19,10 @@ async fn main() {
             let logical_x = (mouse_x - offset_x) / CELL_SIZE as f32 + 0.5;
             let logical_y = (mouse_y - offset_y) / CELL_SIZE as f32 + 0.5;
 
-            if logical_x > 0.0 && logical_y > 0.0 {
+            if logical_x > 0.0 {
                 matrix_rows = std::cmp::max(logical_x as usize, 1);
+            }
+            if logical_y > 0.0 {
                 matrix_cols = std::cmp::max(logical_y as usize, 1);
             }
         }
