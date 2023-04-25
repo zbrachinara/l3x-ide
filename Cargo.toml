@@ -16,3 +16,5 @@ simple_logger = "4.1"
 itertools = "0.10"
 tap = "1.0"
 thiserror = "1.0"
+
+prime_factorization = "1.0"
