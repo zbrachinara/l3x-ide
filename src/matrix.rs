@@ -3,8 +3,10 @@ use itertools::Itertools;
 use macroquad::prelude::*;
 use std::collections::HashMap;
 
+use crate::l3x::L3X;
+
 pub struct Matrix {
-    storage: HashMap<UVec2, String>,
+    storage: HashMap<UVec2, L3X>,
     dims: UVec2,
     editing: Option<UVec2>,
     editing_text: String,
@@ -29,8 +31,8 @@ impl Matrix {
             draw_rectangle_lines(lower.x, lower.y, size, size, 2.0, WHITE);
 
             let text_offset = lower + Vec2::new(size * 0.05, size * 0.67);
-            if let Some(text) = self.storage.get(&UVec2 { x, y }) {
-                draw_text(text, text_offset.x, text_offset.y, 32.0, WHITE)
+            if let Some(l3x) = self.storage.get(&UVec2 { x, y }) {
+                draw_text(&l3x.to_string(), text_offset.x, text_offset.y, 32.0, WHITE)
             }
         }
     }
@@ -52,7 +54,7 @@ impl Matrix {
             self.editing_text = self
                 .storage
                 .get(&location)
-                .cloned()
+                .map(|l3x| l3x.to_string())
                 .unwrap_or("".to_string());
         }
     }
@@ -67,7 +69,11 @@ impl Matrix {
             ui.text_edit_singleline(&mut self.editing_text);
 
             if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                self.storage.insert(location, self.editing_text.clone());
+                if let Ok(serialize_success) = L3X::try_from(self.editing_text.as_str()) {
+                    self.storage.insert(location, serialize_success);
+                } else {
+                    log::debug!("Serialization failure")
+                }
             }
         }
     }
