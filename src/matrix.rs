@@ -1,7 +1,7 @@
 use egui::Ui;
 use itertools::Itertools;
 use macroquad::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 use crate::l3x::L3X;
 
@@ -21,12 +21,20 @@ impl MatrixMode {
     }
 }
 
+struct Traveler {
+    value: u64, // TODO new number type representing registers directly
+    position: UVec2,
+}
+
 pub struct Matrix {
     mode: MatrixMode,
     storage: HashMap<UVec2, L3X>,
     dims: UVec2,
     editing: Option<UVec2>,
     editing_text: String,
+
+    queues: HashMap<UVec2, VecDeque<Traveler>>,
+    travelers: Vec<Traveler>,
 }
 
 impl Default for Matrix {
@@ -37,6 +45,8 @@ impl Default for Matrix {
             dims: uvec2(1, 1),
             editing: Default::default(),
             editing_text: Default::default(),
+            queues: Default::default(),
+            travelers: Default::default(),
         }
     }
 }
