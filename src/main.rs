@@ -21,8 +21,9 @@ pub fn mouse() -> Vec2 {
 
 #[macroquad::main("L3X IDE")]
 async fn main() {
-    if simple_logger::SimpleLogger::default().init().is_err() {
+    if let Err(e) = simple_logger::SimpleLogger::default().init() {
         println!("Failed to init logging, you are on your own");
+        println!("simple-logger failed with error {e}")
     }
 
     let mut matrix = Matrix::default();
