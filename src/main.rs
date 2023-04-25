@@ -53,12 +53,19 @@ async fn main() {
             }
         }
 
+        if input_driver.lmb_doubleclick() {
+            matrix.edit(logical.as_ivec2());
+        }
+        if is_key_pressed(KeyCode::Escape) {
+            matrix.stop_edit();
+        }
+
         egui_macroquad::ui(|ctx| {
             egui::Window::new("Menu")
                 .title_bar(false)
                 .anchor(Align2::RIGHT_TOP, (-50.0, 50.0))
                 .show(ctx, |ui| {
-                    ui.label("Hello");
+                    matrix.ui(ui);
                 });
         });
 
