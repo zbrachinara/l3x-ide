@@ -18,6 +18,10 @@ pub fn mouse() -> Vec2 {
 
 #[macroquad::main("L3X IDE")]
 async fn main() {
+    if simple_logger::SimpleLogger::default().init().is_err() {
+        println!("Failed to init logging, you are on your own");
+    }
+
     let mut matrix = Matrix::default();
 
     const CELL_SIZE: f32 = 60.0;

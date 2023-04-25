@@ -21,8 +21,9 @@ impl MouseButtonDriver {
             self.successive_clicks = 0;
         }
         self.duration += frame_time;
-        println!("duration: {}", self.duration);
-        println!("held: {}", self.held);
+
+        log::debug!("duration: {}", self.duration);
+        log::debug!("held: {}", self.held);
     }
 
     pub fn held(&self) -> Option<(Vec2, f32)> {
