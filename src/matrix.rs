@@ -23,10 +23,15 @@ impl Default for Matrix {
 
 impl Matrix {
     pub fn draw(&self, offset: Vec2, cell_size: f32, scale: f32) {
-        for (i, j) in (0..self.dims.x).cartesian_product(0..self.dims.y) {
-            let lower = (Vec2::new(i as f32, j as f32) * cell_size + offset) * scale;
+        for (x, y) in (0..self.dims.x).cartesian_product(0..self.dims.y) {
+            let lower = (Vec2::new(x as f32, y as f32) * cell_size + offset) * scale;
             let size = cell_size * scale;
             draw_rectangle_lines(lower.x, lower.y, size, size, 2.0, WHITE);
+
+            let text_offset = lower + Vec2::new(size * 0.05, size * 0.67);
+            if let Some(text) = self.storage.get(&UVec2 { x, y }) {
+                draw_text(text, text_offset.x, text_offset.y, 32.0, WHITE)
+            }
         }
     }
 
@@ -37,7 +42,11 @@ impl Matrix {
     }
 
     pub fn edit(&mut self, location: IVec2) {
-        if location.x > 0 && location.y > 0 {
+        if location.x > 0
+            && location.y > 0
+            && location.x < self.dims.x as i32
+            && location.y < self.dims.y as i32
+        {
             let location = location.as_uvec2();
             self.editing = Some(location);
             self.editing_text = self
@@ -57,7 +66,7 @@ impl Matrix {
             ui.label("Editing");
             ui.text_edit_singleline(&mut self.editing_text);
 
-            if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+            if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                 self.storage.insert(location, self.editing_text.clone());
             }
         }
