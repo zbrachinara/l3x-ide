@@ -31,7 +31,7 @@ async fn main() {
 
         input_driver.update();
         let logical = (mouse() - offset) / CELL_SIZE;
-        if is_mouse_button_down(MouseButton::Left) {
+        if input_driver.lmb_hold().is_some() {
             matrix.set_dims((logical + Vec2::splat(0.5)).as_ivec2())
         }
 

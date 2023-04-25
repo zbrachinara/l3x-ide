@@ -33,7 +33,6 @@ impl MouseButtonDriver {
         if self.held && !is_mouse_button_down(self.button) {
             self.held = false;
             if self.duration > CLICK_SPEED {
-                println!("Resetting clicks");
                 self.successive_clicks = 0;
             }
             self.duration = 0.0;
@@ -43,7 +42,6 @@ impl MouseButtonDriver {
             self.held = true;
             self.hold_started_at = mouse();
             if self.duration > CLICK_SPEED {
-                println!("Resetting clicks");
                 self.successive_clicks = 0;
             }
             self.successive_clicks += 1;
@@ -83,6 +81,7 @@ impl Default for InputDriver {
 impl InputDriver {
     pub fn update(&mut self) {
         self.right_mouse_button.update();
+        self.left_mouse_button.update();
     }
 
     pub fn rmb_doubleclick(&self) -> bool {
@@ -91,5 +90,13 @@ impl InputDriver {
 
     pub fn lmb_doubleclick(&self) -> bool {
         self.left_mouse_button.double_clicked()
+    }
+
+    pub fn rmb_hold(&self) -> Option<(Vec2, f32)> {
+        self.right_mouse_button.held()
+    }
+
+    pub fn lmb_hold(&self) -> Option<(Vec2, f32)> {
+        self.left_mouse_button.held()
     }
 }
