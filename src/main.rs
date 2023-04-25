@@ -1,3 +1,5 @@
+#![warn(clippy::all)]
+
 use egui::Align2;
 use macroquad::prelude::*;
 use macroquad::window::next_frame;
