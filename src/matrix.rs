@@ -68,11 +68,7 @@ impl Matrix {
     }
 
     pub fn edit(&mut self, location: IVec2) {
-        if location.x > 0
-            && location.y > 0
-            && location.x < self.dims.x as i32
-            && location.y < self.dims.y as i32
-        {
+        if location.cmpge(IVec2::ZERO).all() && location.cmplt(self.dims.as_ivec2()).all() {
             let location = location.as_uvec2();
             self.editing = Some(location);
             self.editing_text = self
