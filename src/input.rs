@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use macroquad::{miniquad::EventHandler, prelude::*};
 const HOLD_DURATION: f32 = 0.3;
 const CLICK_SPEED: f32 = 0.2;
@@ -46,16 +48,17 @@ impl MouseButtonDriver {
 /// manually updated through the loop.
 pub struct InputDriver {
     subscribe_id: usize,
-    right_mouse_button: MouseButtonDriver,
-    left_mouse_button: MouseButtonDriver,
+    mouse_buttons: HashMap<MouseButton, MouseButtonDriver>,
 }
 
 impl Default for InputDriver {
     fn default() -> Self {
         Self {
             subscribe_id: macroquad::input::utils::register_input_subscriber(),
-            right_mouse_button: MouseButtonDriver::default(),
-            left_mouse_button: MouseButtonDriver::default(),
+            mouse_buttons: [MouseButton::Left, MouseButton::Right, MouseButton::Middle]
+                .into_iter()
+                .map(|button| (button, MouseButtonDriver::default()))
+                .collect(),
         }
     }
 }
@@ -71,50 +74,43 @@ impl EventHandler for InputDriver {
         x: f32,
         y: f32,
     ) {
-        match button {
-            MouseButton::Left => &mut self.left_mouse_button,
-            MouseButton::Right => &mut self.right_mouse_button,
-            _ => return,
+        if let Some(button) = self.mouse_buttons.get_mut(&button) {
+            button.listen_event(true, x, y)
         }
-        .listen_event(true, x, y)
     }
 
     fn mouse_button_up_event(
         &mut self,
         _: &mut miniquad::Context,
-        _button: MouseButton,
+        button: MouseButton,
         x: f32,
         y: f32,
     ) {
-        match _button {
-            MouseButton::Left => &mut self.left_mouse_button,
-            MouseButton::Right => &mut self.right_mouse_button,
-            _ => return,
+        if let Some(button) = self.mouse_buttons.get_mut(&button) {
+            button.listen_event(false, x, y)
         }
-        .listen_event(false, x, y)
     }
 }
 
 impl InputDriver {
     pub fn update(&mut self) {
         macroquad::input::utils::repeat_all_miniquad_input(self, self.subscribe_id);
-        self.right_mouse_button.update();
-        self.left_mouse_button.update();
+        self.mouse_buttons.values_mut().for_each(|b| b.update())
     }
 
     pub fn rmb_doubleclick(&self) -> bool {
-        self.right_mouse_button.double_clicked()
+        self.mouse_buttons[&MouseButton::Right].double_clicked()
     }
 
     pub fn lmb_doubleclick(&self) -> bool {
-        self.left_mouse_button.double_clicked()
+        self.mouse_buttons[&MouseButton::Left].double_clicked()
     }
 
     pub fn rmb_hold(&self) -> Option<(Vec2, f32)> {
-        self.right_mouse_button.held()
+        self.mouse_buttons[&MouseButton::Right].held()
     }
 
     pub fn lmb_hold(&self) -> Option<(Vec2, f32)> {
-        self.left_mouse_button.held()
+        self.mouse_buttons[&MouseButton::Left].held()
     }
 }
