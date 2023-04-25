@@ -1,12 +1,9 @@
-use macroquad::prelude::*;
+use macroquad::{miniquad::EventHandler, prelude::*};
+const HOLD_DURATION: f32 = 0.3;
+const CLICK_SPEED: f32 = 0.2;
 
-use crate::mouse;
-
-const HOLD_DURATION: f32 = 0.2;
-const CLICK_SPEED: f32 = 0.25;
-
+#[derive(Default)]
 struct MouseButtonDriver {
-    button: MouseButton,
     successive_clicks: u32,
     held: bool,
     /// If [held] is true, this refers to how long the button has been held. If [held] is false, this
@@ -16,40 +13,14 @@ struct MouseButtonDriver {
 }
 
 impl MouseButtonDriver {
-    fn button(button: MouseButton) -> Self {
-        Self {
-            button,
-            successive_clicks: 0,
-            held: false,
-            duration: 0.0,
-            hold_started_at: Vec2::ZERO,
-        }
-    }
-
     fn update(&mut self) {
         let frame_time = get_frame_time();
-
-        // mouse button released
-        if self.held && !is_mouse_button_down(self.button) {
-            self.held = false;
-            if self.duration > CLICK_SPEED {
-                self.successive_clicks = 0;
-            }
-            self.duration = 0.0;
+        if self.duration > CLICK_SPEED {
+            self.successive_clicks = 0;
         }
-        // mouse button pressed
-        else if !self.held && is_mouse_button_down(self.button) {
-            self.held = true;
-            self.hold_started_at = mouse();
-            if self.duration > CLICK_SPEED {
-                self.successive_clicks = 0;
-            }
-            self.successive_clicks += 1;
-
-            self.duration = 0.0;
-        }
-
         self.duration += frame_time;
+        println!("duration: {}", self.duration);
+        println!("held: {}", self.held);
     }
 
     pub fn held(&self) -> Option<(Vec2, f32)> {
@@ -60,11 +31,21 @@ impl MouseButtonDriver {
     pub fn double_clicked(&self) -> bool {
         self.successive_clicks == 2 && self.held
     }
+
+    fn listen_event(&mut self, pressed: bool, x: f32, y: f32) {
+        self.held = pressed;
+        if pressed {
+            self.successive_clicks += 1;
+        }
+        self.hold_started_at = Vec2 { x, y };
+        self.duration = 0.0;
+    }
 }
 
 /// Extra input driver on top of macroquad, detecting more events such as double clicks. Must be
 /// manually updated through the loop.
 pub struct InputDriver {
+    subscribe_id: usize,
     right_mouse_button: MouseButtonDriver,
     left_mouse_button: MouseButtonDriver,
 }
@@ -72,14 +53,51 @@ pub struct InputDriver {
 impl Default for InputDriver {
     fn default() -> Self {
         Self {
-            right_mouse_button: MouseButtonDriver::button(MouseButton::Right),
-            left_mouse_button: MouseButtonDriver::button(MouseButton::Left),
+            subscribe_id: macroquad::input::utils::register_input_subscriber(),
+            right_mouse_button: MouseButtonDriver::default(),
+            left_mouse_button: MouseButtonDriver::default(),
         }
+    }
+}
+
+impl EventHandler for InputDriver {
+    fn update(&mut self, _ctx: &mut miniquad::Context) {}
+    fn draw(&mut self, _ctx: &mut miniquad::Context) {}
+
+    fn mouse_button_down_event(
+        &mut self,
+        _: &mut miniquad::Context,
+        button: MouseButton,
+        x: f32,
+        y: f32,
+    ) {
+        match button {
+            MouseButton::Left => &mut self.left_mouse_button,
+            MouseButton::Right => &mut self.right_mouse_button,
+            _ => return,
+        }
+        .listen_event(true, x, y)
+    }
+
+    fn mouse_button_up_event(
+        &mut self,
+        _: &mut miniquad::Context,
+        _button: MouseButton,
+        x: f32,
+        y: f32,
+    ) {
+        match _button {
+            MouseButton::Left => &mut self.left_mouse_button,
+            MouseButton::Right => &mut self.right_mouse_button,
+            _ => return,
+        }
+        .listen_event(false, x, y)
     }
 }
 
 impl InputDriver {
     pub fn update(&mut self) {
+        macroquad::input::utils::repeat_all_miniquad_input(self, self.subscribe_id);
         self.right_mouse_button.update();
         self.left_mouse_button.update();
     }
