@@ -43,18 +43,36 @@ impl Default for Matrix {
 
 impl Matrix {
     pub fn draw(&self, offset: Vec2, cell_size: f32, scale: f32) {
+        let cell_size = cell_size * scale;
+        let font_size = 32.0 * scale;
+        let text_offset = Vec2::new(cell_size * 0.05, cell_size * 0.67);
+
+        // annotate input and output
+        let io_text_offset = vec2(0.4, 0.67) * cell_size;
+        let i_single_text = offset + vec2(0.0, -cell_size) + io_text_offset;
+        let o_single_text =
+            offset + (self.dims - uvec2(1, 0)).as_vec2() * cell_size + io_text_offset;
+        draw_text("I", i_single_text.x, i_single_text.y, font_size, WHITE);
+        draw_text("O", o_single_text.x, o_single_text.y, font_size, WHITE);
+        if self.mode == MatrixMode::L3X {
+            let i_stream_text = offset + vec2(cell_size, -cell_size) + io_text_offset;
+            let o_stream_text =
+                offset + (self.dims - uvec2(2, 0)).as_vec2() * cell_size + io_text_offset;
+            draw_text("I_s", i_stream_text.x, i_stream_text.y, font_size, WHITE);
+            draw_text("O_s", o_stream_text.x, o_stream_text.y, font_size, WHITE);
+        }
+
         for (x, y) in (0..self.dims.x).cartesian_product(0..self.dims.y) {
             let lower = (Vec2::new(x as f32, y as f32) * cell_size + offset) * scale;
-            let cell_size = cell_size * scale;
             draw_rectangle_lines(lower.x, lower.y, cell_size, cell_size, 2.0, WHITE);
 
-            let text_offset = lower + Vec2::new(cell_size * 0.05, cell_size * 0.67);
+            // TODO represent cell contents graphically
             if let Some(l3x) = self.storage.get(&UVec2 { x, y }) {
                 draw_text(
                     &l3x.to_string(),
-                    text_offset.x,
-                    text_offset.y,
-                    32.0 * scale,
+                    (lower + text_offset).x,
+                    (lower + text_offset).y,
+                    font_size,
                     WHITE,
                 )
             }
