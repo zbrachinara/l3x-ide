@@ -3,7 +3,7 @@ use itertools::Itertools;
 use macroquad::prelude::*;
 use std::collections::{HashMap, VecDeque};
 
-use crate::l3x::L3X;
+use crate::{l3x::L3X, traveler::Traveler};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum MatrixMode {
@@ -19,11 +19,6 @@ impl MatrixMode {
             MatrixMode::L3X => uvec2(2, 2),
         }
     }
-}
-
-struct Traveler {
-    value: u64, // TODO new number type representing registers directly
-    position: UVec2,
 }
 
 pub struct Matrix {
