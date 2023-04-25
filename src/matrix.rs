@@ -1,4 +1,4 @@
-use egui::{Ui};
+use egui::Ui;
 use itertools::Itertools;
 use macroquad::prelude::*;
 use std::collections::HashMap;
@@ -7,6 +7,7 @@ pub struct Matrix {
     storage: HashMap<UVec2, String>,
     dims: UVec2,
     editing: Option<UVec2>,
+    editing_text: String,
 }
 
 impl Default for Matrix {
@@ -15,6 +16,7 @@ impl Default for Matrix {
             storage: HashMap::new(),
             dims: UVec2 { x: 1, y: 1 },
             editing: None,
+            editing_text: "".to_string(),
         }
     }
 }
@@ -36,7 +38,13 @@ impl Matrix {
 
     pub fn edit(&mut self, location: IVec2) {
         if location.x > 0 && location.y > 0 {
-            self.editing = Some(location.as_uvec2());
+            let location = location.as_uvec2();
+            self.editing = Some(location);
+            self.editing_text = self
+                .storage
+                .get(&location)
+                .cloned()
+                .unwrap_or("".to_string());
         }
     }
 
@@ -44,9 +52,14 @@ impl Matrix {
         self.editing = None;
     }
 
-    pub fn ui(&self, ui: &mut Ui) {
+    pub fn ui(&mut self, ui: &mut Ui) {
         if let Some(location) = self.editing {
             ui.label("Editing");
+            ui.text_edit_singleline(&mut self.editing_text);
+
+            if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                self.storage.insert(location, self.editing_text.clone());
+            }
         }
     }
 }
