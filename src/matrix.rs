@@ -5,7 +5,24 @@ use std::collections::HashMap;
 
 use crate::l3x::L3X;
 
+#[derive(Default, Clone, Copy, PartialEq, Eq)]
+pub enum MatrixMode {
+    #[default]
+    L3,
+    L3X,
+}
+
+impl MatrixMode {
+    fn minimum_size(&self) -> UVec2 {
+        match self {
+            MatrixMode::L3 => uvec2(1, 1),
+            MatrixMode::L3X => uvec2(2, 2),
+        }
+    }
+}
+
 pub struct Matrix {
+    mode: MatrixMode,
     storage: HashMap<UVec2, L3X>,
     dims: UVec2,
     editing: Option<UVec2>,
@@ -15,10 +32,11 @@ pub struct Matrix {
 impl Default for Matrix {
     fn default() -> Self {
         Self {
-            storage: HashMap::new(),
+            mode: Default::default(),
+            storage: Default::default(),
             dims: UVec2 { x: 1, y: 1 },
-            editing: None,
-            editing_text: "".to_string(),
+            editing: Default::default(),
+            editing_text: Default::default(),
         }
     }
 }
@@ -44,7 +62,7 @@ impl Matrix {
     }
 
     pub fn set_dims(&mut self, dims: IVec2) {
-        if dims.x >= 1 && dims.y >= 1 {
+        if self.mode.minimum_size().as_ivec2().cmple(dims).all() {
             self.dims = dims.as_uvec2();
         }
     }
@@ -69,7 +87,16 @@ impl Matrix {
         self.editing = None;
     }
 
-    pub fn ui(&mut self, ui: &mut Ui) {
+    pub fn config_ui(&mut self, ui: &mut Ui) {
+        ui.label("L3 Mode");
+        ui.horizontal(|ui| {
+            let l3_radio = ui.radio_value(&mut self.mode, MatrixMode::L3, "L3");
+            let l3x_radio = ui.radio_value(&mut self.mode, MatrixMode::L3X, "L3X");
+            if l3_radio.union(l3x_radio).changed() {
+                self.dims = self.dims.max(self.mode.minimum_size());
+            }
+        });
+
         if let Some(location) = self.editing {
             ui.label("Editing");
             ui.text_edit_singleline(&mut self.editing_text);

@@ -74,7 +74,7 @@ async fn main() {
                 .title_bar(false)
                 .anchor(Align2::RIGHT_TOP, (-50.0, 50.0))
                 .show(ctx, |ui| {
-                    matrix.ui(ui);
+                    matrix.config_ui(ui);
                 });
         });
 
