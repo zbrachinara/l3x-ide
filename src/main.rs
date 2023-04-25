@@ -6,8 +6,8 @@ use crate::input::InputDriver;
 use crate::matrix::Matrix;
 
 mod input;
-mod matrix;
 mod l3x;
+mod matrix;
 
 pub fn mouse() -> Vec2 {
     let (mouse_x, mouse_y) = mouse_position();
@@ -26,7 +26,9 @@ async fn main() {
     let mut matrix = Matrix::default();
 
     const CELL_SIZE: f32 = 60.0;
+    const SCALE_RATE: f32 = 0.02;
     let mut offset = Vec2 { x: 100.0, y: 100.0 };
+    let mut scale = 1.0;
 
     let mut rmb_position = None;
     let mut input_driver = InputDriver::default();
@@ -35,7 +37,7 @@ async fn main() {
         clear_background(BLACK);
 
         input_driver.update();
-        let logical = (mouse() - offset) / CELL_SIZE;
+        let logical = (mouse() - offset) / (CELL_SIZE * scale);
         if input_driver.lmb_hold().is_some() {
             matrix.set_dims((logical + Vec2::splat(0.5)).as_ivec2())
         }
@@ -65,6 +67,8 @@ async fn main() {
             matrix.stop_edit();
         }
 
+        scale += mouse_wheel().1 * SCALE_RATE;
+
         egui_macroquad::ui(|ctx| {
             egui::Window::new("Menu")
                 .title_bar(false)
@@ -74,7 +78,7 @@ async fn main() {
                 });
         });
 
-        matrix.draw(offset, CELL_SIZE, 1.0);
+        matrix.draw(offset, CELL_SIZE, scale);
         egui_macroquad::draw();
 
         next_frame().await

@@ -27,12 +27,18 @@ impl Matrix {
     pub fn draw(&self, offset: Vec2, cell_size: f32, scale: f32) {
         for (x, y) in (0..self.dims.x).cartesian_product(0..self.dims.y) {
             let lower = (Vec2::new(x as f32, y as f32) * cell_size + offset) * scale;
-            let size = cell_size * scale;
-            draw_rectangle_lines(lower.x, lower.y, size, size, 2.0, WHITE);
+            let cell_size = cell_size * scale;
+            draw_rectangle_lines(lower.x, lower.y, cell_size, cell_size, 2.0, WHITE);
 
-            let text_offset = lower + Vec2::new(size * 0.05, size * 0.67);
+            let text_offset = lower + Vec2::new(cell_size * 0.05, cell_size * 0.67);
             if let Some(l3x) = self.storage.get(&UVec2 { x, y }) {
-                draw_text(&l3x.to_string(), text_offset.x, text_offset.y, 32.0, WHITE)
+                draw_text(
+                    &l3x.to_string(),
+                    text_offset.x,
+                    text_offset.y,
+                    32.0 * scale,
+                    WHITE,
+                )
             }
         }
     }
