@@ -26,12 +26,12 @@ impl MouseButtonDriver {
         log::debug!("held: {}", self.held);
     }
 
-    pub fn held(&self) -> Option<(Vec2, f32)> {
+    fn held(&self) -> Option<(Vec2, f32)> {
         (self.held && self.duration >= HOLD_DURATION)
             .then_some((self.hold_started_at, self.duration))
     }
 
-    pub fn double_clicked(&self) -> bool {
+    fn double_clicked(&self) -> bool {
         self.successive_clicks == 2 && self.held
     }
 
@@ -98,7 +98,10 @@ impl InputDriver {
         macroquad::input::utils::repeat_all_miniquad_input(self, self.subscribe_id);
         self.mouse_buttons.values_mut().for_each(|b| b.update())
     }
+}
 
+#[allow(dead_code)]
+impl InputDriver {
     pub fn rmb_doubleclick(&self) -> bool {
         self.mouse_buttons[&MouseButton::Right].double_clicked()
     }
