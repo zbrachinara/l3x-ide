@@ -40,7 +40,7 @@ impl MouseButtonDriver {
         if pressed {
             self.successive_clicks += 1;
         }
-        self.hold_started_at = Vec2 { x, y };
+        self.hold_started_at = vec2(x, y);
         self.duration = 0.0;
     }
 }

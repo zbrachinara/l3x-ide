@@ -34,7 +34,7 @@ impl Default for Matrix {
         Self {
             mode: Default::default(),
             storage: Default::default(),
-            dims: UVec2 { x: 1, y: 1 },
+            dims: uvec2(1, 1),
             editing: Default::default(),
             editing_text: Default::default(),
         }
@@ -45,7 +45,7 @@ impl Matrix {
     pub fn draw(&self, offset: Vec2, cell_size: f32, scale: f32) {
         let cell_size = cell_size * scale;
         let font_size = 32.0 * scale;
-        let text_offset = Vec2::new(cell_size * 0.05, cell_size * 0.67);
+        let text_offset = vec2(0.05, 0.67) * cell_size;
 
         // annotate input and output
         let io_text_offset = vec2(0.4, 0.67) * cell_size;
@@ -63,11 +63,11 @@ impl Matrix {
         }
 
         for (x, y) in (0..self.dims.x).cartesian_product(0..self.dims.y) {
-            let lower = (Vec2::new(x as f32, y as f32) * cell_size + offset) * scale;
+            let lower = (uvec2(x, y).as_vec2() * cell_size + offset) * scale;
             draw_rectangle_lines(lower.x, lower.y, cell_size, cell_size, 2.0, WHITE);
 
             // TODO represent cell contents graphically
-            if let Some(l3x) = self.storage.get(&UVec2 { x, y }) {
+            if let Some(l3x) = self.storage.get(&uvec2(x, y)) {
                 draw_text(
                     &l3x.to_string(),
                     (lower + text_offset).x,
