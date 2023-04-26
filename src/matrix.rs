@@ -161,9 +161,9 @@ impl Matrix {
         if let Some(location) = self.editing {
             ui.separator();
             ui.label(format!("Editing cell {location}"));
-            ui.text_edit_singleline(&mut self.editing_text);
-
-            if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+            if ui.text_edit_singleline(&mut self.editing_text).lost_focus()
+                && ui.input(|i| i.key_pressed(egui::Key::Enter))
+            {
                 if let Ok(serialize_success) = L3X::try_from(self.editing_text.as_str()) {
                     if self.is_editing_input_stream()
                         && serialize_success.command != L3XCommand::Queue
