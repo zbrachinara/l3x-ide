@@ -39,6 +39,8 @@ pub struct Matrix {
     single_input: Option<Registers>,
     stream_input_text: Option<String>,
     stream_input: Vec<Registers>,
+
+    simulating: bool,
 }
 
 impl Default for Matrix {
@@ -56,6 +58,7 @@ impl Default for Matrix {
             single_input: Default::default(),
             stream_input_text: Default::default(),
             stream_input: Default::default(),
+            simulating: false,
         }
     }
 }
@@ -137,76 +140,113 @@ impl Matrix {
         self.editing = None;
     }
 
+    fn init_simulation(&mut self) {
+        self.simulating = true;
+    }
+
+    fn cleanup_simulation(&mut self) {
+        self.simulating = false;
+    }
+
     pub fn config_ui(&mut self, ui: &mut Ui) {
-        ui.label("L3 Mode");
+        ui.label("Simulation");
         ui.horizontal(|ui| {
-            let l3_radio = ui.radio_value(&mut self.mode, MatrixMode::L3, "L3");
-            let l3x_radio = ui.radio_value(&mut self.mode, MatrixMode::L3X, "L3X");
-            if l3_radio.union(l3x_radio).changed() {
-                self.dims = self.dims.max(self.mode.minimum_size());
-                self.force_queue_l3x()
+            ui.scope(|ui| {
+                ui.set_enabled(!self.simulating);
+                if ui.button("Start").clicked() {
+                    self.init_simulation()
+                }
+            });
+            ui.scope(|ui| {
+                ui.set_enabled(self.simulating);
+                ui.button("▶").on_hover_text("play (step automatically)");
+                ui.button("⏸").on_hover_text("pause (stop autostepping");
+                ui.button("⏭").on_hover_text("step by one cycle");
+                if ui
+                    .button("⏹")
+                    .on_hover_text("exit the simulation")
+                    .clicked()
+                {
+                    self.cleanup_simulation();
+                }
+            });
+        });
+
+        ui.scope(|ui| {
+            ui.set_enabled(!self.simulating);
+            ui.separator();
+            ui.label("L3 Mode");
+            ui.horizontal(|ui| {
+                let l3_radio = ui.radio_value(&mut self.mode, MatrixMode::L3, "L3");
+                let l3x_radio = ui.radio_value(&mut self.mode, MatrixMode::L3X, "L3X");
+                if l3_radio.union(l3x_radio).changed() {
+                    self.dims = self.dims.max(self.mode.minimum_size());
+                    self.force_queue_l3x()
+                }
+            });
+
+            ui.separator();
+            ui.label("Single input (L3)");
+            if ui
+                .text_edit_singleline(&mut self.single_input_text)
+                .lost_focus()
+                && ui.input(|i| i.key_pressed(egui::Key::Enter))
+            {
+                if let Ok(registers) = self.single_input_text.parse() {
+                    self.single_input = Some(registers);
+                }
+            }
+
+            ui.separator();
+            ui.label("Multi input (L3X)");
+
+            self.stream_input
+                .e_drain_where(|registers| ui.button(registers.to_string()).clicked())
+                .for_each(drop);
+            if let Some(ref mut text) = self.stream_input_text {
+                let textedit = ui.text_edit_singleline(text);
+                if self.single_input_next_frame_focus {
+                    textedit.request_focus();
+                    self.single_input_next_frame_focus = false;
+                }
+                if textedit.lost_focus() {
+                    if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                        if let Ok(registers) = text.parse() {
+                            self.stream_input.push(registers);
+                        }
+                        text.clear();
+                        self.single_input_next_frame_focus = true;
+                    } else {
+                        self.stream_input_text = None;
+                    }
+                }
+            } else if ui.button("Add to stream").clicked() {
+                self.stream_input_text = Some(String::new());
+                self.single_input_next_frame_focus = true;
             }
         });
 
-        ui.separator();
-        ui.label("Single input (L3)");
-        if ui
-            .text_edit_singleline(&mut self.single_input_text)
-            .lost_focus()
-            && ui.input(|i| i.key_pressed(egui::Key::Enter))
-        {
-            if let Ok(registers) = self.single_input_text.parse() {
-                self.single_input = Some(registers);
-            }
-        }
-
-        ui.separator();
-        ui.label("Multi input (L3X)");
-
-        self.stream_input
-            .e_drain_where(|registers| ui.button(registers.to_string()).clicked())
-            .for_each(drop);
-
-        if let Some(ref mut text) = self.stream_input_text {
-            let textedit = ui.text_edit_singleline(text);
-            if self.single_input_next_frame_focus {
-                textedit.request_focus();
-                self.single_input_next_frame_focus = false;
-            }
-            if textedit.lost_focus() {
-                if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                    if let Ok(registers) = text.parse() {
-                        self.stream_input.push(registers);
-                    }
-                    text.clear();
-                    self.single_input_next_frame_focus = true;
-                } else {
-                    self.stream_input_text = None;
-                }
-            }
-        } else if ui.button("Add to stream").clicked() {
-            self.stream_input_text = Some(String::new());
-            self.single_input_next_frame_focus = true;
-        }
-
         if let Some(location) = self.editing {
-            ui.separator();
-            ui.label(format!("Editing cell {location}"));
-            if ui.text_edit_singleline(&mut self.editing_text).lost_focus()
-                && ui.input(|i| i.key_pressed(egui::Key::Enter))
-            {
-                if let Ok(serialize_success) = L3X::try_from(self.editing_text.as_str()) {
-                    if self.is_editing_input_stream()
-                        && serialize_success.command != L3XCommand::Queue
-                    {
-                        log::warn!("In L3X mode, edited square *must* be a queue!")
+            ui.scope(|ui| {
+                ui.set_enabled(!self.simulating);
+                ui.separator();
+                ui.label(format!("Editing cell {location}"));
+                if ui.text_edit_singleline(&mut self.editing_text).lost_focus()
+                    && ui.input(|i| i.key_pressed(egui::Key::Enter))
+                {
+                    if let Ok(serialize_success) = L3X::try_from(self.editing_text.as_str()) {
+                        if self.is_editing_input_stream()
+                            && serialize_success.command != L3XCommand::Queue
+                        {
+                            log::warn!("In L3X mode, edited square *must* be a queue!")
+                        } else {
+                            self.storage.insert(location, serialize_success);
+                        }
                     } else {
-                        self.storage.insert(location, serialize_success);
+                        log::warn!("Serialization failure")
                     }
-                } else {
-                    log::warn!("Serialization failure")
                 }
-            }
+            });
         }
     }
 }
