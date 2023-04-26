@@ -4,7 +4,7 @@ use macroquad::prelude::*;
 use prime_factorization::Factorization;
 
 #[derive(PartialEq, Eq, Debug)]
-pub struct Registers(pub HashMap<u64, u32>);
+pub struct Registers(pub Vec<(u64, u32)>);
 
 impl TryFrom<u64> for Registers {
     type Error = ();
@@ -20,7 +20,7 @@ impl TryFrom<u64> for Registers {
             for &e in factorization.factors.iter() {
                 state.entry(e).and_modify(|v| *v += 1).or_insert(1);
             }
-            Ok(Self(state))
+            Ok(Self(state.into_iter().collect()))
         }
     }
 }
@@ -30,7 +30,7 @@ impl Display for Registers {
         let u64_repr = self
             .0
             .iter()
-            .fold(0, |st, (&base, &pow)| st + base.pow(pow));
+            .fold(0, |st, &(base, pow)| st + base.pow(pow));
 
         write!(f, "{u64_repr}")
     }
