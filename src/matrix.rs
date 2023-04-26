@@ -269,14 +269,24 @@ impl Matrix {
                     }
                 });
             });
-            ui.separator();
-            ui.label("Travelers on this square");
+
             if self.simulating {
+                ui.separator();
+                ui.label("Travelers on this cell");
                 self.travelers
                     .iter()
-                    .filter(|&&Traveler { position, .. }| position == location).for_each(|traveler| {
+                    .filter(|&&Traveler { position, .. }| position == location)
+                    .for_each(|traveler| {
                         ui.label(traveler.to_string());
                     });
+
+                if let Some(queue) = self.queues.get(&location) {
+                    ui.separator();
+                    ui.label("Queue on this cell");
+                    for register in queue {
+                        ui.label(register.to_string());
+                    }
+                }
             }
         }
     }
