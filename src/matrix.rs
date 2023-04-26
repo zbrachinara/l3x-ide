@@ -5,7 +5,7 @@ use std::collections::{HashMap, VecDeque};
 
 use crate::{
     l3x::{Direction, L3XCommand, L3X},
-    traveler::Traveler,
+    traveler::{Registers, Traveler},
 };
 
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
@@ -33,6 +33,8 @@ pub struct Matrix {
 
     queues: HashMap<UVec2, VecDeque<Traveler>>,
     travelers: Vec<Traveler>,
+    single_input_text: String,
+    single_input: Option<Registers>,
 }
 
 impl Default for Matrix {
@@ -45,6 +47,8 @@ impl Default for Matrix {
             editing_text: Default::default(),
             queues: Default::default(),
             travelers: Default::default(),
+            single_input_text: Default::default(),
+            single_input: Default::default(),
         }
     }
 }
@@ -136,6 +140,23 @@ impl Matrix {
                 self.force_queue_l3x()
             }
         });
+
+        ui.separator();
+        ui.label("Single input (L3)");
+        if ui
+            .text_edit_singleline(&mut self.single_input_text)
+            .lost_focus()
+            && ui.input(|i| i.key_pressed(egui::Key::Enter))
+        {
+            if let Ok(registers) = self
+                .single_input_text
+                .parse::<u64>()
+                .map_err(|_| ())
+                .and_then(Registers::try_from)
+            {
+                self.single_input = Some(registers);
+            }
+        }
 
         if let Some(location) = self.editing {
             ui.label("Editing");
