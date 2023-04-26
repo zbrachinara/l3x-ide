@@ -111,8 +111,8 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.binary }}.zip
-          asset_name: ${{ env.binary }}-linux-${{ steps.get_version.outputs.tag }}.zip
+          file: target/x86_64-unknown-linux-gnu/release/${{ env.binary }}
+          asset_name: ${{ env.binary }}-linux-${{ steps.get_version.outputs.tag }}
           tag: ${{ github.ref }}
           overwrite: true
 
@@ -146,8 +146,8 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.binary }}.zip
-          asset_name: ${{ env.binary }}-windows-${{ steps.get_version.outputs.tag }}.zip
+          file: target/x86_64-pc-windows-msvc/release/${{ env.binary }}.exe
+          asset_name: ${{ env.binary }}-windows-${{ steps.get_version.outputs.tag }}.exe
           tag: ${{ github.ref }}
           overwrite: true
 
@@ -183,7 +183,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.binary }}.dmg
-          asset_name: ${{ env.binary }}-macos-${{ steps.get_version.outputs.tag }}.dmg
+          file: target/x86_64-apple-darwin/release/${{ env.binary }}
+          asset_name: ${{ env.binary }}-macos-${{ steps.get_version.outputs.tag }}
           tag: ${{ github.ref }}
           overwrite: true
