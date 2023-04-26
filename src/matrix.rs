@@ -203,6 +203,9 @@ impl Matrix {
 
             ui.separator();
             ui.label("Single input (L3)");
+            if let Some(ref value) = self.single_input {
+                ui.label(format!("Current value: {}", value));
+            }
             if ui
                 .text_edit_singleline(&mut self.single_input_text)
                 .lost_focus()
