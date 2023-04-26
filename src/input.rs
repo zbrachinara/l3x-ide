@@ -22,8 +22,8 @@ impl MouseButtonDriver {
         }
         self.duration += frame_time;
 
-        log::debug!("duration: {}", self.duration);
-        log::debug!("held: {}", self.held);
+        log::trace!("duration: {}", self.duration);
+        log::trace!("held: {}", self.held);
     }
 
     fn held(&self) -> Option<(Vec2, f32)> {

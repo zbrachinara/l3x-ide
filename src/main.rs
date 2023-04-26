@@ -22,7 +22,10 @@ pub fn mouse() -> Vec2 {
 
 #[macroquad::main("L3X IDE")]
 async fn main() {
-    if let Err(e) = simple_logger::SimpleLogger::default().init() {
+    if let Err(e) = simple_logger::SimpleLogger::default()
+        .with_level(log::LevelFilter::Debug)
+        .init()
+    {
         println!("Failed to init logging, you are on your own");
         println!("simple-logger failed with error {e}")
     }
