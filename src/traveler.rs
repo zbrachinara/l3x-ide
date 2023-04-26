@@ -6,7 +6,7 @@ use prime_factorization::Factorization;
 
 use crate::l3x::Direction;
 
-/// Represents the value of a traveller or a cell. If the value of the register is 1, then the
+/// Represents the value of a traveler or a cell. If the value of the register is 1, then the
 /// vector in this struct is empty. Otherwise, it is a list of (p, pow), where p is a prime,
 /// representing `p_0 ^ pow_0 * p_1 ^ pow_1 * ... * p_n ^ pow_n`
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -46,6 +46,26 @@ impl Display for Registers {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let u64_repr = self.0.iter().fold(1, |st, &(base, pow)| st * base.pow(pow));
         write!(f, "{u64_repr}")
+    }
+}
+
+impl Registers {
+    fn try_div(&self, divisor: &Self) -> Option<Self> {
+        let result = merge_join_by(
+            self.0.iter(),
+            divisor.0.iter(),
+            |(left_base, _), (right_base, _)| left_base.cmp(right_base),
+        )
+        .map(|cmp| match cmp {
+            itertools::EitherOrBoth::Both(&(base, pow_left), &(_, pow_right)) => {
+                pow_left.checked_sub(pow_right).map(|pow| (base, pow))
+            }
+            itertools::EitherOrBoth::Left(&val) => Some(val),
+            itertools::EitherOrBoth::Right(_) => None,
+        })
+        .collect::<Option<Vec<_>>>()?;
+
+        Some(Self(result))
     }
 }
 
@@ -122,6 +142,17 @@ mod test_registers {
             Registers(vec![(2, 9), (3, 6), (5, 1), (7, 9)]),
             "adding between registers 2 and 3"
         )
+    }
+
+    #[test]
+    fn division() {
+        let r1 = Registers(vec![(17, 1)]);
+        let r2 = Registers(vec![(13, 1)]);
+        assert_eq!(r1.try_div(&r2), None, "Coprime numbers should fail to divide");
+
+        let r1 = Registers(vec![(2, 9), (3, 4), (5, 7), (7, 4)]);
+        let r2 = Registers(vec![(2, 1), (3, 1), (7, 1)]);
+        assert_eq!(r1.try_div(&r2), Some(Registers(vec![(2, 8), (3, 3), (5, 7), (7, 3)])), "Normal case");
     }
 }
 
