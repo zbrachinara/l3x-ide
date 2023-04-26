@@ -216,32 +216,34 @@ impl Matrix {
                 }
             }
 
-            ui.separator();
-            ui.label("Multi input (L3X)");
+            if self.mode == MatrixMode::L3X {
+                ui.separator();
+                ui.label("Multi input (L3X)");
 
-            self.stream_input
-                .e_drain_where(|registers| ui.button(registers.to_string()).clicked())
-                .for_each(drop);
-            if let Some(ref mut text) = self.stream_input_text {
-                let textedit = ui.text_edit_singleline(text);
-                if self.single_input_next_frame_focus {
-                    textedit.request_focus();
-                    self.single_input_next_frame_focus = false;
-                }
-                if textedit.lost_focus() {
-                    if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                        if let Ok(registers) = text.parse() {
-                            self.stream_input.push(registers);
-                        }
-                        text.clear();
-                        self.single_input_next_frame_focus = true;
-                    } else {
-                        self.stream_input_text = None;
+                self.stream_input
+                    .e_drain_where(|registers| ui.button(registers.to_string()).clicked())
+                    .for_each(drop);
+                if let Some(ref mut text) = self.stream_input_text {
+                    let textedit = ui.text_edit_singleline(text);
+                    if self.single_input_next_frame_focus {
+                        textedit.request_focus();
+                        self.single_input_next_frame_focus = false;
                     }
+                    if textedit.lost_focus() {
+                        if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                            if let Ok(registers) = text.parse() {
+                                self.stream_input.push(registers);
+                            }
+                            text.clear();
+                            self.single_input_next_frame_focus = true;
+                        } else {
+                            self.stream_input_text = None;
+                        }
+                    }
+                } else if ui.button("Add to stream").clicked() {
+                    self.stream_input_text = Some(String::new());
+                    self.single_input_next_frame_focus = true;
                 }
-            } else if ui.button("Add to stream").clicked() {
-                self.stream_input_text = Some(String::new());
-                self.single_input_next_frame_focus = true;
             }
         });
 
