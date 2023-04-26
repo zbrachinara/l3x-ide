@@ -31,7 +31,7 @@ pub struct Matrix {
     editing: Option<UVec2>,
     editing_text: String,
 
-    queues: HashMap<UVec2, VecDeque<Traveler>>,
+    queues: HashMap<UVec2, VecDeque<Registers>>,
     travelers: Vec<Traveler>,
     single_input_text: String,
     single_input: Option<Registers>,
