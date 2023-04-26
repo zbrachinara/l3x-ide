@@ -1,3 +1,5 @@
+use crate::traveler::Registers;
+
 #[derive(PartialEq, Eq, Debug)]
 pub struct L3X {
     // TODO support watch points
@@ -13,7 +15,7 @@ pub enum Direction {
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum L3XCommand {
-    Number(u32),
+    Number(Registers),
     Duplicate,
     Queue,
     Annihilate,
@@ -23,6 +25,7 @@ pub enum L3XCommand {
 pub enum L3XParseError {
     BadDirection,
     BadCommand,
+    ZeroCommand,
     NumberOverflow,
     WrongLength,
     UnaccountedCharacters,
@@ -65,7 +68,10 @@ impl TryFrom<&str> for L3X {
             L3XCommand::Number(
                 command_str
                     .parse()
-                    .map_err(|_| L3XParseError::NumberOverflow)?,
+                    .map_err(|_| L3XParseError::NumberOverflow)
+                    .and_then(|i: u64| {
+                        Registers::try_from(i).map_err(|_| L3XParseError::ZeroCommand)
+                    })?,
             )
         } else {
             match command_str
@@ -87,7 +93,7 @@ impl TryFrom<&str> for L3X {
 impl ToString for L3X {
     fn to_string(&self) -> String {
         let mut out = match self.command {
-            L3XCommand::Number(n) => format!("{n}"),
+            L3XCommand::Number(ref n) => format!("{n}"),
             L3XCommand::Duplicate => "%".to_string(),
             L3XCommand::Queue => "&".to_string(),
             L3XCommand::Annihilate => '~'.to_string(),
@@ -112,7 +118,7 @@ mod tests {
             L3X::try_from("3L"),
             Ok(L3X {
                 direction: Direction::Left,
-                command: L3XCommand::Number(3)
+                command: L3XCommand::Number(Registers([(3, 1)].into_iter().collect()))
             })
         )
     }

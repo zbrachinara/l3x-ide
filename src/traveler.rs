@@ -1,10 +1,10 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use macroquad::prelude::*;
 use prime_factorization::Factorization;
 
 #[derive(PartialEq, Eq, Debug)]
-pub struct Registers(HashMap<u64, u64>);
+pub struct Registers(pub HashMap<u64, u32>);
 
 impl TryFrom<u64> for Registers {
     type Error = ();
@@ -25,6 +25,17 @@ impl TryFrom<u64> for Registers {
     }
 }
 
+impl Display for Registers {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let u64_repr = self
+            .0
+            .iter()
+            .fold(0, |st, (&base, &pow)| st + base.pow(pow));
+
+        write!(f, "{u64_repr}")
+    }
+}
+
 #[cfg(test)]
 mod test_registers {
     use super::*;
@@ -40,7 +51,12 @@ mod test_registers {
     #[test]
     fn test_primes() {
         // very large
-        assert_eq!(Registers::try_from(18_446_744_073_709_551_557), Ok(Registers([(18_446_744_073_709_551_557, 1)].into_iter().collect())))
+        assert_eq!(
+            Registers::try_from(18_446_744_073_709_551_557),
+            Ok(Registers(
+                [(18_446_744_073_709_551_557, 1)].into_iter().collect()
+            ))
+        )
     }
 }
 
