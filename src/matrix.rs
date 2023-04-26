@@ -2,6 +2,7 @@ use egui::Ui;
 use itertools::Itertools;
 use macroquad::prelude::*;
 use std::collections::{HashMap, VecDeque};
+use vec_drain_where::VecDrainWhereExt;
 
 use crate::{
     l3x::{Direction, L3XCommand, L3X},
@@ -33,6 +34,7 @@ pub struct Matrix {
 
     queues: HashMap<UVec2, VecDeque<Registers>>,
     travelers: Vec<Traveler>,
+    single_input_next_frame_focus: bool,
     single_input_text: String,
     single_input: Option<Registers>,
     stream_input_text: Option<String>,
@@ -49,6 +51,7 @@ impl Default for Matrix {
             editing_text: Default::default(),
             queues: Default::default(),
             travelers: Default::default(),
+            single_input_next_frame_focus: false,
             single_input_text: Default::default(),
             single_input: Default::default(),
             stream_input_text: Default::default(),
@@ -160,20 +163,30 @@ impl Matrix {
         ui.separator();
         ui.label("Multi input (L3X)");
 
-        for registers in &self.stream_input {
-            ui.button(registers.to_string());
-        }
+        self.stream_input
+            .e_drain_where(|registers| ui.button(registers.to_string()).clicked())
+            .for_each(drop);
 
         if let Some(ref mut text) = self.stream_input_text {
-            if ui.text_edit_singleline(text).lost_focus()
-                && ui.input(|i| i.key_pressed(egui::Key::Enter))
-            {
-                if let Ok(registers) = text.parse() {
-                    self.stream_input.push(registers);
+            let textedit = ui.text_edit_singleline(text);
+            if self.single_input_next_frame_focus {
+                textedit.request_focus();
+                self.single_input_next_frame_focus = false;
+            }
+            if textedit.lost_focus() {
+                if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    if let Ok(registers) = text.parse() {
+                        self.stream_input.push(registers);
+                    }
+                    text.clear();
+                    self.single_input_next_frame_focus = true;
+                } else {
+                    self.stream_input_text = None;
                 }
             }
         } else if ui.button("Add to stream").clicked() {
-            self.stream_input_text = Some(String::new())
+            self.stream_input_text = Some(String::new());
+            self.single_input_next_frame_focus = true;
         }
 
         if let Some(location) = self.editing {
