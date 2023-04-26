@@ -6,6 +6,9 @@ use prime_factorization::Factorization;
 
 use crate::l3x::Direction;
 
+/// Represents the value of a traveller or a cell. If the value of the register is 1, then the
+/// vector in this struct is empty. Otherwise, it is a list of (p, pow), where p is a prime,
+/// representing `p_0 ^ pow_0 * p_1 ^ pow_1 * ... * p_n ^ pow_n`
 #[derive(PartialEq, Eq, Debug)]
 pub struct Registers(pub Vec<(u64, u32)>);
 
@@ -16,7 +19,7 @@ impl TryFrom<u64> for Registers {
         if value == 0 {
             Err(())
         } else if value == 1 {
-            Ok(Self([(1, 1)].into_iter().collect()))
+            Ok(Self(vec![]))
         } else {
             let factorization = Factorization::run(value); // TODO look into factorization alternatives
             let mut state = HashMap::new();
@@ -90,7 +93,7 @@ mod test_registers {
     #[test]
     fn zero_and_one() {
         assert_eq!(Registers::try_from(0), Err(()));
-        assert_eq!(Registers::try_from(1), Ok(Registers(vec![(1, 1)])));
+        assert_eq!(Registers::try_from(1), Ok(Registers(vec![])));
     }
 
     #[test]
