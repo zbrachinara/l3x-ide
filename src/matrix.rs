@@ -230,22 +230,28 @@ impl Matrix {
             ui.scope(|ui| {
                 ui.set_enabled(!self.simulating);
                 ui.separator();
-                ui.label(format!("Editing cell {location}"));
-                if ui.text_edit_singleline(&mut self.editing_text).lost_focus()
-                    && ui.input(|i| i.key_pressed(egui::Key::Enter))
-                {
-                    if let Ok(serialize_success) = L3X::try_from(self.editing_text.as_str()) {
-                        if self.is_editing_input_stream()
-                            && serialize_success.command != L3XCommand::Queue
-                        {
-                            log::warn!("In L3X mode, edited square *must* be a queue!")
+                ui.label(format!("Cell value @ {location}"));
+                ui.horizontal(|ui| {
+                    let textedit = ui.text_edit_singleline(&mut self.editing_text);
+                    if textedit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                        if let Ok(serialize_success) = L3X::try_from(self.editing_text.as_str()) {
+                            if self.is_editing_input_stream()
+                                && serialize_success.command != L3XCommand::Queue
+                            {
+                                log::warn!("In L3X mode, edited square *must* be a queue!")
+                            } else {
+                                self.storage.insert(location, serialize_success);
+                            }
                         } else {
-                            self.storage.insert(location, serialize_success);
+                            log::warn!("Serialization failure")
                         }
-                    } else {
-                        log::warn!("Serialization failure")
                     }
-                }
+                    if ui.button("Clear").clicked() {
+                        self.editing_text.clear();
+                        self.storage.remove(&location);
+                        self.force_queue_l3x();
+                    }
+                });
             });
         }
     }
