@@ -58,7 +58,7 @@ jobs:
       - name: Upload package as pages artifact
         uses: actions/upload-pages-artifact@v1.0.4
         with:
-          path: "./wasm"
+          path: "./www"
           retention-days: "30"
 
   # push compiled wasm to github pages
