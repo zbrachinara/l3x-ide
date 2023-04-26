@@ -86,6 +86,9 @@ impl Matrix {
 
         for (x, y) in (0..self.dims.x).cartesian_product(0..self.dims.y) {
             let lower = (uvec2(x, y).as_vec2() * cell_size + offset) * scale;
+            if matches!(self.editing, Some(vec) if vec == uvec2(x, y)) {
+                draw_rectangle(lower.x, lower.y, cell_size, cell_size, GRAY);
+            }
             draw_rectangle_lines(lower.x, lower.y, cell_size, cell_size, 2.0, WHITE);
 
             // TODO represent cell contents graphically
