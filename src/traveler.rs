@@ -4,7 +4,7 @@ use itertools::merge_join_by;
 use macroquad::prelude::*;
 use prime_factorization::Factorization;
 
-use crate::l3x::Direction;
+use crate::l3x::{Direction, L3X};
 
 /// Represents the value of a traveler or a cell. If the value of the register is 1, then the
 /// vector in this struct is empty. Otherwise, it is a list of (p, pow), where p is a prime,
@@ -148,11 +148,19 @@ mod test_registers {
     fn division() {
         let r1 = Registers(vec![(17, 1)]);
         let r2 = Registers(vec![(13, 1)]);
-        assert_eq!(r1.try_div(&r2), None, "Coprime numbers should fail to divide");
+        assert_eq!(
+            r1.try_div(&r2),
+            None,
+            "Coprime numbers should fail to divide"
+        );
 
         let r1 = Registers(vec![(2, 9), (3, 4), (5, 7), (7, 4)]);
         let r2 = Registers(vec![(2, 1), (3, 1), (7, 1)]);
-        assert_eq!(r1.try_div(&r2), Some(Registers(vec![(2, 8), (3, 3), (5, 7), (7, 3)])), "Normal case");
+        assert_eq!(
+            r1.try_div(&r2),
+            Some(Registers(vec![(2, 8), (3, 3), (5, 7), (7, 3)])),
+            "Normal case"
+        );
     }
 }
 

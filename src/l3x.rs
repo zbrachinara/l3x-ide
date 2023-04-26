@@ -15,7 +15,7 @@ pub enum Direction {
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum L3XCommand {
-    Number(Registers),
+    Multiply(Registers),
     Duplicate,
     Queue,
     Annihilate,
@@ -65,7 +65,7 @@ impl TryFrom<&str> for L3X {
             return Err(L3XParseError::UnaccountedCharacters);
         }
         let command = if command_is_numeric {
-            L3XCommand::Number(
+            L3XCommand::Multiply(
                 command_str
                     .parse()
                     .map_err(|_| L3XParseError::NumberOverflow)
@@ -93,7 +93,7 @@ impl TryFrom<&str> for L3X {
 impl ToString for L3X {
     fn to_string(&self) -> String {
         let mut out = match self.command {
-            L3XCommand::Number(ref n) => format!("{n}"),
+            L3XCommand::Multiply(ref n) => format!("{n}"),
             L3XCommand::Duplicate => "%".to_string(),
             L3XCommand::Queue => "&".to_string(),
             L3XCommand::Annihilate => '~'.to_string(),
@@ -118,7 +118,7 @@ mod tests {
             L3X::try_from("3L"),
             Ok(L3X {
                 direction: Direction::Left,
-                command: L3XCommand::Number(Registers([(3, 1)].into_iter().collect()))
+                command: L3XCommand::Multiply(Registers([(3, 1)].into_iter().collect()))
             })
         )
     }
