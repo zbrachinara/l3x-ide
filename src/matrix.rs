@@ -169,6 +169,8 @@ impl Matrix {
 
     fn cleanup_simulation(&mut self) {
         self.simulating = false;
+        self.travelers.clear();
+        self.queues.clear();
     }
 
     fn step(&mut self) {
