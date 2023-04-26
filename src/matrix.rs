@@ -176,7 +176,7 @@ impl Matrix {
             ui.scope(|ui| {
                 ui.set_enabled(self.simulating);
                 ui.button("▶").on_hover_text("play (step automatically)");
-                ui.button("⏸").on_hover_text("pause (stop autostepping");
+                ui.button("⏸").on_hover_text("pause (stop autostepping)");
                 ui.button("⏭").on_hover_text("step by one cycle");
                 if ui
                     .button("⏹")
