@@ -27,12 +27,12 @@ impl MatrixMode {
 
 pub struct Matrix {
     mode: MatrixMode,
-    storage: HashMap<UVec2, L3X>,
+    storage: HashMap<IVec2, L3X>,
     dims: UVec2,
-    selecting: Option<UVec2>,
+    selecting: Option<IVec2>,
     selecting_text: String,
 
-    queues: HashMap<UVec2, VecDeque<Registers>>,
+    queues: HashMap<IVec2, VecDeque<Registers>>,
     travelers: Vec<Traveler>,
     single_input_next_frame_focus: bool,
     single_input_text: String,
@@ -86,13 +86,13 @@ impl Matrix {
 
         for (x, y) in (0..self.dims.x).cartesian_product(0..self.dims.y) {
             let lower = (uvec2(x, y).as_vec2() * cell_size + offset) * scale;
-            if matches!(self.selecting, Some(vec) if vec == uvec2(x, y)) {
+            if matches!(self.selecting, Some(vec) if vec == uvec2(x, y).as_ivec2()) {
                 draw_rectangle(lower.x, lower.y, cell_size, cell_size, GRAY);
             }
             draw_rectangle_lines(lower.x, lower.y, cell_size, cell_size, 2.0, WHITE);
 
             // TODO represent cell contents graphically
-            if let Some(l3x) = self.storage.get(&uvec2(x, y)) {
+            if let Some(l3x) = self.storage.get(&uvec2(x, y).as_ivec2()) {
                 draw_text(
                     &l3x.to_string(),
                     (lower + text_offset).x,
@@ -115,7 +115,7 @@ impl Matrix {
     fn force_queue_l3x(&mut self) {
         if self.mode == MatrixMode::L3X {
             self.storage
-                .entry(uvec2(1, 0))
+                .entry(ivec2(1, 0))
                 .and_modify(|e| e.command = L3XCommand::Queue)
                 .or_insert(L3X {
                     direction: Direction::Down,
@@ -125,7 +125,7 @@ impl Matrix {
     }
 
     fn is_editing_input_stream(&self) -> bool {
-        self.mode == MatrixMode::L3X && self.selecting == Some(uvec2(1, 0))
+        self.mode == MatrixMode::L3X && self.selecting == Some(ivec2(1, 0))
     }
 
     pub fn set_dims(&mut self, dims: IVec2) {
@@ -136,7 +136,7 @@ impl Matrix {
 
     pub fn edit(&mut self, location: IVec2) {
         if location.cmpge(IVec2::ZERO).all() && location.cmplt(self.dims.as_ivec2()).all() {
-            let location = location.as_uvec2();
+            let location = location;
             self.selecting = Some(location);
             self.selecting_text = self
                 .storage
@@ -153,12 +153,12 @@ impl Matrix {
     fn init_simulation_inner(&mut self) -> Option<()> {
         self.travelers.push(Traveler {
             value: self.single_input.clone()?,
-            position: UVec2::ZERO,
+            position: IVec2::ZERO,
             direction: Direction::Down,
         });
 
         self.queues
-            .insert(uvec2(1, 0), self.stream_input.clone().into());
+            .insert(ivec2(1, 0), self.stream_input.clone().into());
 
         Some(())
     }
@@ -169,6 +169,10 @@ impl Matrix {
 
     fn cleanup_simulation(&mut self) {
         self.simulating = false;
+    }
+
+    fn step(&mut self) {
+        self.step_travelers();
     }
 
     pub fn config_ui(&mut self, ui: &mut Ui) {
@@ -184,7 +188,9 @@ impl Matrix {
                 ui.set_enabled(self.simulating);
                 ui.button("▶").on_hover_text("play (step automatically)");
                 ui.button("⏸").on_hover_text("pause (stop autostepping)");
-                ui.button("⏭").on_hover_text("step by one cycle");
+                if ui.button("⏭").on_hover_text("step by one cycle").clicked() {
+                    self.step()
+                }
                 if ui
                     .button("⏹")
                     .on_hover_text("exit the simulation")
@@ -301,5 +307,42 @@ impl Matrix {
                 }
             }
         }
+    }
+
+    fn step_travelers(&mut self) -> Result<(), ()> {
+        let endpoint = self.travelers.len();
+        let mut ix = 0;
+
+        while ix < endpoint {
+            let traveler = &mut self.travelers[ix];
+            let instruction = (traveler.position.cmplt(self.dims.as_ivec2()).all())
+                .then(|| self.storage.get(&traveler.position))
+                .flatten()
+                .ok_or(())?;
+            let aligned = traveler.direction == instruction.direction;
+
+            match &instruction.command {
+                L3XCommand::Multiply(with) => {
+                    if aligned {
+                        traveler.value *= with;
+                        traveler.position += IVec2::from(traveler.direction);
+                    } else if let Some(div) = traveler.value.try_div(with) {
+                        traveler.value = div;
+                        traveler.position += IVec2::from(instruction.direction);
+                        traveler.direction = instruction.direction;
+                    } else {
+                        traveler.position += IVec2::from(instruction.direction.opposite());
+                        traveler.direction = instruction.direction.opposite();
+                    }
+                }
+                L3XCommand::Duplicate => todo!(),
+                L3XCommand::Queue => todo!(),
+                L3XCommand::Annihilate => todo!(),
+            }
+
+            ix += 1;
+        }
+
+        Ok(())
     }
 }

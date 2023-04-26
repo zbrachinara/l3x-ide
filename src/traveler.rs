@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, ops::Mul, str::FromStr};
+use std::{collections::HashMap, fmt::Display, ops::{Mul, MulAssign}, str::FromStr};
 
 use itertools::merge_join_by;
 use macroquad::prelude::*;
@@ -50,7 +50,7 @@ impl Display for Registers {
 }
 
 impl Registers {
-    fn try_div(&self, divisor: &Self) -> Option<Self> {
+    pub fn try_div(&self, divisor: &Self) -> Option<Self> {
         let result = merge_join_by(
             self.0.iter(),
             divisor.0.iter(),
@@ -106,6 +106,19 @@ impl Mul<right> for left {
         left_ref * right_ref
     }
 }
+
+impl MulAssign<&Registers> for Registers {
+    fn mul_assign(&mut self, rhs: &Registers) {
+        *self = &*self * rhs;
+    }
+}
+
+impl MulAssign for Registers {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self *= &rhs
+    }
+}
+
 
 #[cfg(test)]
 mod test_registers {
@@ -166,7 +179,7 @@ mod test_registers {
 
 pub struct Traveler {
     pub value: Registers, // TODO new number type representing registers directly
-    pub position: UVec2,
+    pub position: IVec2,
     pub direction: Direction,
 }
 

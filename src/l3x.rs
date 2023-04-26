@@ -1,3 +1,6 @@
+use macroquad::prelude::*;
+use std::ops::Add;
+
 use crate::traveler::Registers;
 
 #[derive(PartialEq, Eq, Debug)]
@@ -7,7 +10,7 @@ pub struct L3X {
     pub command: L3XCommand,
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 #[rustfmt::skip]
 pub enum Direction {
     Up, Down, Left, Right,
@@ -29,6 +32,28 @@ pub enum L3XParseError {
     NumberOverflow,
     WrongLength,
     UnaccountedCharacters,
+}
+
+impl Direction {
+    pub fn opposite(&self) -> Self {
+        match self {
+            Direction::Up => Direction::Down,
+            Direction::Down => Direction::Up,
+            Direction::Left => Direction::Right,
+            Direction::Right => Direction::Left,
+        }
+    }
+}
+
+impl From<Direction> for IVec2 {
+    fn from(value: Direction) -> Self {
+        match value {
+            Direction::Up => ivec2(0, -1),
+            Direction::Down => ivec2(0, 1),
+            Direction::Left => ivec2(-1, 0),
+            Direction::Right => ivec2(1, 0),
+        }
+    }
 }
 
 impl TryFrom<char> for Direction {
