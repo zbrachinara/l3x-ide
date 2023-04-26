@@ -29,8 +29,8 @@ pub struct Matrix {
     mode: MatrixMode,
     storage: HashMap<UVec2, L3X>,
     dims: UVec2,
-    editing: Option<UVec2>,
-    editing_text: String,
+    selecting: Option<UVec2>,
+    selecting_text: String,
 
     queues: HashMap<UVec2, VecDeque<Registers>>,
     travelers: Vec<Traveler>,
@@ -49,8 +49,8 @@ impl Default for Matrix {
             mode: Default::default(),
             storage: Default::default(),
             dims: uvec2(1, 1),
-            editing: Default::default(),
-            editing_text: Default::default(),
+            selecting: Default::default(),
+            selecting_text: Default::default(),
             queues: Default::default(),
             travelers: Default::default(),
             single_input_next_frame_focus: false,
@@ -86,7 +86,7 @@ impl Matrix {
 
         for (x, y) in (0..self.dims.x).cartesian_product(0..self.dims.y) {
             let lower = (uvec2(x, y).as_vec2() * cell_size + offset) * scale;
-            if matches!(self.editing, Some(vec) if vec == uvec2(x, y)) {
+            if matches!(self.selecting, Some(vec) if vec == uvec2(x, y)) {
                 draw_rectangle(lower.x, lower.y, cell_size, cell_size, GRAY);
             }
             draw_rectangle_lines(lower.x, lower.y, cell_size, cell_size, 2.0, WHITE);
@@ -118,7 +118,7 @@ impl Matrix {
     }
 
     fn is_editing_input_stream(&self) -> bool {
-        self.mode == MatrixMode::L3X && self.editing == Some(uvec2(1, 0))
+        self.mode == MatrixMode::L3X && self.selecting == Some(uvec2(1, 0))
     }
 
     pub fn set_dims(&mut self, dims: IVec2) {
@@ -130,8 +130,8 @@ impl Matrix {
     pub fn edit(&mut self, location: IVec2) {
         if location.cmpge(IVec2::ZERO).all() && location.cmplt(self.dims.as_ivec2()).all() {
             let location = location.as_uvec2();
-            self.editing = Some(location);
-            self.editing_text = self
+            self.selecting = Some(location);
+            self.selecting_text = self
                 .storage
                 .get(&location)
                 .map(|l3x| l3x.to_string())
@@ -140,11 +140,24 @@ impl Matrix {
     }
 
     pub fn stop_edit(&mut self) {
-        self.editing = None;
+        self.selecting = None;
+    }
+
+    fn init_simulation_inner(&mut self) -> Option<()> {
+        self.travelers.push(Traveler {
+            value: self.single_input.clone()?,
+            position: UVec2::ZERO,
+            direction: Direction::Down,
+        });
+
+        self.queues
+            .insert(uvec2(1, 0), self.stream_input.clone().into());
+
+        Some(())
     }
 
     fn init_simulation(&mut self) {
-        self.simulating = true;
+        self.simulating = self.init_simulation_inner().is_some()
     }
 
     fn cleanup_simulation(&mut self) {
@@ -229,15 +242,15 @@ impl Matrix {
             }
         });
 
-        if let Some(location) = self.editing {
+        if let Some(location) = self.selecting {
             ui.scope(|ui| {
                 ui.set_enabled(!self.simulating);
                 ui.separator();
                 ui.label(format!("Cell value @ {location}"));
                 ui.horizontal(|ui| {
-                    let textedit = ui.text_edit_singleline(&mut self.editing_text);
+                    let textedit = ui.text_edit_singleline(&mut self.selecting_text);
                     if textedit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                        if let Ok(serialize_success) = L3X::try_from(self.editing_text.as_str()) {
+                        if let Ok(serialize_success) = L3X::try_from(self.selecting_text.as_str()) {
                             if self.is_editing_input_stream()
                                 && serialize_success.command != L3XCommand::Queue
                             {
@@ -250,12 +263,21 @@ impl Matrix {
                         }
                     }
                     if ui.button("Clear").clicked() {
-                        self.editing_text.clear();
+                        self.selecting_text.clear();
                         self.storage.remove(&location);
                         self.force_queue_l3x();
                     }
                 });
             });
+            ui.separator();
+            ui.label("Travelers on this square");
+            if self.simulating {
+                self.travelers
+                    .iter()
+                    .filter(|&&Traveler { position, .. }| position == location).for_each(|traveler| {
+                        ui.label(traveler.to_string());
+                    });
+            }
         }
     }
 }

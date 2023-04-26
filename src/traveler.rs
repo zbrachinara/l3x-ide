@@ -9,7 +9,7 @@ use crate::l3x::Direction;
 /// Represents the value of a traveller or a cell. If the value of the register is 1, then the
 /// vector in this struct is empty. Otherwise, it is a list of (p, pow), where p is a prime,
 /// representing `p_0 ^ pow_0 * p_1 ^ pow_1 * ... * p_n ^ pow_n`
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Registers(pub Vec<(u64, u32)>);
 
 impl TryFrom<u64> for Registers {
@@ -126,7 +126,13 @@ mod test_registers {
 }
 
 pub struct Traveler {
-    value: Registers, // TODO new number type representing registers directly
-    position: UVec2,
-    direction: Direction,
+    pub value: Registers, // TODO new number type representing registers directly
+    pub position: UVec2,
+    pub direction: Direction,
+}
+
+impl Display for Traveler {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {:?}", self.value, self.direction)
+    }
 }
