@@ -35,6 +35,8 @@ pub struct Matrix {
     travelers: Vec<Traveler>,
     single_input_text: String,
     single_input: Option<Registers>,
+    stream_input_text: Option<String>,
+    stream_input: Vec<Registers>,
 }
 
 impl Default for Matrix {
@@ -49,6 +51,8 @@ impl Default for Matrix {
             travelers: Default::default(),
             single_input_text: Default::default(),
             single_input: Default::default(),
+            stream_input_text: Default::default(),
+            stream_input: Default::default(),
         }
     }
 }
@@ -148,14 +152,28 @@ impl Matrix {
             .lost_focus()
             && ui.input(|i| i.key_pressed(egui::Key::Enter))
         {
-            if let Ok(registers) = self
-                .single_input_text
-                .parse::<u64>()
-                .map_err(|_| ())
-                .and_then(Registers::try_from)
-            {
+            if let Ok(registers) = self.single_input_text.parse() {
                 self.single_input = Some(registers);
             }
+        }
+
+        ui.separator();
+        ui.label("Multi input (L3X)");
+
+        for registers in &self.stream_input {
+            ui.button(registers.to_string());
+        }
+
+        if let Some(ref mut text) = self.stream_input_text {
+            if ui.text_edit_singleline(text).lost_focus()
+                && ui.input(|i| i.key_pressed(egui::Key::Enter))
+            {
+                if let Ok(registers) = text.parse() {
+                    self.stream_input.push(registers);
+                }
+            }
+        } else if ui.button("Add to stream").clicked() {
+            self.stream_input_text = Some(String::new())
         }
 
         if let Some(location) = self.editing {

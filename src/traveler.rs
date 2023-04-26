@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, ops::Mul};
+use std::{collections::HashMap, fmt::Display, ops::Mul, str::FromStr};
 
 use itertools::merge_join_by;
 use macroquad::prelude::*;
@@ -28,10 +28,20 @@ impl TryFrom<u64> for Registers {
     }
 }
 
+impl FromStr for Registers {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse::<u64>()
+            .map_err(|_| ())
+            .and_then(Registers::try_from)
+        // todo!()
+    }
+}
+
 impl Display for Registers {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let u64_repr = self.0.iter().fold(0, |st, &(base, pow)| st + base.pow(pow));
-
         write!(f, "{u64_repr}")
     }
 }
