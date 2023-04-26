@@ -102,6 +102,13 @@ impl Matrix {
                 )
             }
         }
+
+        // draw travelers
+        for traveler in &self.travelers {
+            let pos =
+                ((traveler.position.as_vec2() + Vec2::splat(0.5)) * cell_size + offset) * scale;
+            draw_circle(pos.x, pos.y, 10.0 * scale, BLUE);
+        }
     }
 
     /// Forces the streaming input square to be a queue when the matrix is in l3x mode
