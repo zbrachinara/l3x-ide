@@ -119,7 +119,7 @@ impl Matrix {
     }
 
     pub fn set_dims(&mut self, dims: IVec2) {
-        if self.mode.minimum_size().as_ivec2().cmple(dims).all() {
+        if !self.simulating && self.mode.minimum_size().as_ivec2().cmple(dims).all() {
             self.dims = dims.as_uvec2();
         }
     }
