@@ -3,8 +3,8 @@ use crate::traveler::Registers;
 #[derive(PartialEq, Eq, Debug)]
 pub struct L3X {
     // TODO support watch points
-    direction: Direction,
-    command: L3XCommand,
+    pub direction: Direction,
+    pub command: L3XCommand,
 }
 
 #[derive(PartialEq, Eq, Debug)]

@@ -3,7 +3,10 @@ use itertools::Itertools;
 use macroquad::prelude::*;
 use std::collections::{HashMap, VecDeque};
 
-use crate::{l3x::L3X, traveler::Traveler};
+use crate::{
+    l3x::{Direction, L3XCommand, L3X},
+    traveler::Traveler,
+};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum MatrixMode {
@@ -84,6 +87,23 @@ impl Matrix {
         }
     }
 
+    /// Forces the streaming input square to be a queue when the matrix is in l3x mode
+    fn force_queue_l3x(&mut self) {
+        if self.mode == MatrixMode::L3X {
+            self.storage
+                .entry(uvec2(1, 0))
+                .and_modify(|e| e.command = L3XCommand::Queue)
+                .or_insert(L3X {
+                    direction: Direction::Down,
+                    command: L3XCommand::Queue,
+                });
+        }
+    }
+
+    fn is_editing_input_stream(&self) -> bool {
+        self.mode == MatrixMode::L3X && self.editing == Some(uvec2(1, 0))
+    }
+
     pub fn set_dims(&mut self, dims: IVec2) {
         if self.mode.minimum_size().as_ivec2().cmple(dims).all() {
             self.dims = dims.as_uvec2();
@@ -113,6 +133,7 @@ impl Matrix {
             let l3x_radio = ui.radio_value(&mut self.mode, MatrixMode::L3X, "L3X");
             if l3_radio.union(l3x_radio).changed() {
                 self.dims = self.dims.max(self.mode.minimum_size());
+                self.force_queue_l3x()
             }
         });
 
@@ -122,9 +143,15 @@ impl Matrix {
 
             if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                 if let Ok(serialize_success) = L3X::try_from(self.editing_text.as_str()) {
-                    self.storage.insert(location, serialize_success);
+                    if self.is_editing_input_stream()
+                        && serialize_success.command != L3XCommand::Queue
+                    {
+                        log::warn!("In L3X mode, edited square *must* be a queue!")
+                    } else {
+                        self.storage.insert(location, serialize_success);
+                    }
                 } else {
-                    log::debug!("Serialization failure")
+                    log::warn!("Serialization failure")
                 }
             }
         }
