@@ -34,6 +34,8 @@ pub struct Matrix {
 
     queues: HashMap<IVec2, VecDeque<Registers>>,
     travelers: Vec<Traveler>,
+
+    focus_editing: u8,
     single_input_next_frame_focus: bool,
     single_input_text: String,
     single_input: Option<Registers>,
@@ -53,6 +55,7 @@ impl Default for Matrix {
             selecting_text: Default::default(),
             queues: Default::default(),
             travelers: Default::default(),
+            focus_editing: 0,
             single_input_next_frame_focus: false,
             single_input_text: Default::default(),
             single_input: Default::default(),
@@ -137,6 +140,7 @@ impl Matrix {
     pub fn edit(&mut self, location: IVec2) {
         if location.cmpge(IVec2::ZERO).all() && location.cmplt(self.dims.as_ivec2()).all() {
             let location = location;
+            self.focus_editing = 4;
             self.selecting = Some(location);
             self.selecting_text = self
                 .storage
@@ -269,6 +273,14 @@ impl Matrix {
                 ui.label(format!("Cell value @ {location}"));
                 ui.horizontal(|ui| {
                     let textedit = ui.text_edit_singleline(&mut self.selecting_text);
+                    match self.focus_editing {
+                        x if x > 1 => self.focus_editing -= 1,
+                        1 => {
+                            textedit.request_focus();
+                            self.focus_editing -= 1;
+                        }
+                        _ => (),
+                    }
                     if textedit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                         if let Ok(serialize_success) = L3X::try_from(self.selecting_text.as_str()) {
                             if self.is_editing_input_stream()
