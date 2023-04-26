@@ -41,7 +41,7 @@ impl FromStr for Registers {
 
 impl Display for Registers {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let u64_repr = self.0.iter().fold(0, |st, &(base, pow)| st + base.pow(pow));
+        let u64_repr = self.0.iter().fold(1, |st, &(base, pow)| st * base.pow(pow));
         write!(f, "{u64_repr}")
     }
 }
