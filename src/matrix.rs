@@ -159,7 +159,8 @@ impl Matrix {
         }
 
         if let Some(location) = self.editing {
-            ui.label("Editing");
+            ui.separator();
+            ui.label(format!("Editing cell {location}"));
             ui.text_edit_singleline(&mut self.editing_text);
 
             if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
