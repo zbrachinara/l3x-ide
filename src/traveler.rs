@@ -4,6 +4,8 @@ use itertools::merge_join_by;
 use macroquad::prelude::*;
 use prime_factorization::Factorization;
 
+use crate::l3x::Direction;
+
 #[derive(PartialEq, Eq, Debug)]
 pub struct Registers(pub Vec<(u64, u32)>);
 
@@ -113,4 +115,5 @@ mod test_registers {
 pub struct Traveler {
     value: Registers, // TODO new number type representing registers directly
     position: UVec2,
+    direction: Direction,
 }
