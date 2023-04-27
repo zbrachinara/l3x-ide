@@ -331,6 +331,18 @@ impl Matrix {
                     }
                 }
             }
+
+            ui.separator();
+            ui.label("Output");
+            if let Some(ref register) = self.output {
+                ui.label(register.to_string());
+            }
+
+            ui.separator();
+            ui.label("Output stream");
+            for register in &self.output_stream {
+                ui.label(register.to_string());
+            }
         }
     }
 
@@ -340,10 +352,25 @@ impl Matrix {
 
         while ix < endpoint {
             let traveler = &mut self.travelers[ix];
-            let instruction = (traveler.location.cmplt(self.dims.as_ivec2()).all())
-                .then(|| self.storage.get(&traveler.location))
-                .flatten()
-                .ok_or(())?;
+
+            let instruction = if traveler.location.cmplt(self.dims.as_ivec2()).all() {
+                self.storage.get(&traveler.location).ok_or(())?
+            } else if traveler.location == self.dims.as_ivec2() - ivec2(1, 0) {
+                if self.output.is_none() {
+                    endpoint -= 1;
+                    self.output = Some(self.travelers.remove(ix).value);
+                    continue;
+                } else {
+                    return Err(()); // will be a different type of error than out-of-bounds
+                }
+            } else if traveler.location == self.dims.as_ivec2() - ivec2(2, 0) {
+                endpoint -= 1;
+                self.output_stream.push(self.travelers.remove(ix).value);
+                continue;
+            } else {
+                return Err(());
+            };
+
             let aligned = traveler.direction == instruction.direction;
 
             match &instruction.command {

@@ -81,7 +81,9 @@ async fn main() {
                 .title_bar(false)
                 .anchor(Align2::RIGHT_TOP, (-50.0, 50.0))
                 .show(ctx, |ui| {
-                    matrix.config_ui(ui);
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        matrix.config_ui(ui);
+                    })
                 });
         });
 
