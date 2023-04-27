@@ -1,5 +1,4 @@
 use macroquad::prelude::*;
-use std::ops::Add;
 
 use crate::traveler::Registers;
 
