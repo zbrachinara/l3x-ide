@@ -33,6 +33,7 @@ pub struct Matrix {
     selecting_text: String,
 
     queues: HashMap<IVec2, VecDeque<Registers>>,
+    waiting_for_queue: Vec<(Traveler, Registers)>,
     travelers: Vec<Traveler>,
 
     focus_editing: u8,
@@ -54,6 +55,7 @@ impl Default for Matrix {
             selecting: Default::default(),
             selecting_text: Default::default(),
             queues: Default::default(),
+            waiting_for_queue: Default::default(),
             travelers: Default::default(),
             focus_editing: 0,
             single_input_next_frame_focus: false,
@@ -324,7 +326,7 @@ impl Matrix {
     }
 
     fn step_travelers(&mut self) -> Result<(), ()> {
-        let endpoint = self.travelers.len();
+        let mut endpoint = self.travelers.len();
         let mut ix = 0;
 
         while ix < endpoint {
@@ -353,15 +355,41 @@ impl Matrix {
                     new_traveler.direct(instruction.direction.opposite());
                     self.travelers.push(new_traveler);
                 }
-                L3XCommand::Queue => todo!(),
+                L3XCommand::Queue => {
+                    if aligned {
+                        self.queues
+                            .entry(traveler.position)
+                            .and_modify(|q| q.push_back(traveler.value.clone()))
+                            .or_insert_with(|| vec![traveler.value.clone()].into());
+                    } else {
+                        endpoint -= 1;
+                        let mut traveler = self.travelers.remove(ix);
+                        traveler.direction = instruction.direction;
+                        self.waiting_for_queue.push((traveler, Registers::ONE));
+                    }
+                }
                 L3XCommand::Annihilate => {
                     traveler.value = Registers::ONE;
                     traveler.direct(instruction.direction)
-                },
+                }
             }
 
             ix += 1;
         }
+
+        self.waiting_for_queue
+            .e_drain_where(|(traveler, u)| {
+                self.queues
+                    .get_mut(&traveler.position)
+                    .and_then(|q| q.pop_front())
+                    .map(|register| *u = register)
+                    .is_some()
+            })
+            .for_each(|(mut traveler, multiplier)| {
+                traveler.value *= multiplier;
+                traveler.direct(traveler.direction); // needs to step off the queue cell
+                self.travelers.push(traveler)
+            });
 
         Ok(())
     }
