@@ -339,22 +339,18 @@ impl Matrix {
                 L3XCommand::Multiply(with) => {
                     if aligned {
                         traveler.value *= with;
-                        traveler.position += IVec2::from(traveler.direction);
+                        traveler.direct(instruction.direction);
                     } else if let Some(div) = traveler.value.try_div(with) {
                         traveler.value = div;
-                        traveler.position += IVec2::from(instruction.direction);
-                        traveler.direction = instruction.direction;
+                        traveler.direct(instruction.direction);
                     } else {
-                        traveler.position += IVec2::from(instruction.direction.opposite());
-                        traveler.direction = instruction.direction.opposite();
+                        traveler.direct(instruction.direction.opposite());
                     }
                 }
                 L3XCommand::Duplicate => {
                     let mut new_traveler = traveler.clone();
-                    traveler.position += IVec2::from(instruction.direction);
-                    traveler.direction = instruction.direction;
-                    new_traveler.position -= IVec2::from(instruction.direction);
-                    new_traveler.direction = instruction.direction.opposite();
+                    traveler.direct(instruction.direction);
+                    new_traveler.direct(instruction.direction.opposite());
                     self.travelers.push(new_traveler);
                 }
                 L3XCommand::Queue => todo!(),

@@ -1,10 +1,15 @@
-use std::{collections::HashMap, fmt::Display, ops::{Mul, MulAssign}, str::FromStr};
+use std::{
+    collections::HashMap,
+    fmt::Display,
+    ops::{Mul, MulAssign},
+    str::FromStr,
+};
 
 use itertools::merge_join_by;
 use macroquad::prelude::*;
 use prime_factorization::Factorization;
 
-use crate::l3x::{Direction, L3X};
+use crate::l3x::Direction;
 
 /// Represents the value of a traveler or a cell. If the value of the register is 1, then the
 /// vector in this struct is empty. Otherwise, it is a list of (p, pow), where p is a prime,
@@ -119,7 +124,6 @@ impl MulAssign for Registers {
     }
 }
 
-
 #[cfg(test)]
 mod test_registers {
     use super::*;
@@ -182,6 +186,13 @@ pub struct Traveler {
     pub value: Registers, // TODO new number type representing registers directly
     pub position: IVec2,
     pub direction: Direction,
+}
+
+impl Traveler {
+    pub fn direct(&mut self, direction: Direction) {
+        self.position += IVec2::from(direction);
+        self.direction = direction;
+    }
 }
 
 impl Display for Traveler {
