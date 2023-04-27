@@ -1,12 +1,13 @@
 use egui::Ui;
-use if_chain::if_chain;
 use itertools::Itertools;
 use macroquad::prelude::*;
+use smallvec::{smallvec, SmallVec};
 use std::collections::{HashMap, VecDeque};
 use vec_drain_where::VecDrainWhereExt;
 
 use crate::{
     l3x::{Direction, L3XCommand, L3X},
+    swapbuffer::SwapBuffer,
     traveler::{Registers, Traveler},
 };
 
@@ -35,7 +36,7 @@ pub struct Matrix {
 
     queues: HashMap<IVec2, VecDeque<Registers>>,
     waiting_for_queue: Vec<(Traveler, Registers)>,
-    travelers: Vec<Traveler>,
+    travelers: SwapBuffer<Traveler>,
     output: Option<Registers>,
     output_stream: Vec<Registers>,
 
@@ -114,7 +115,7 @@ impl Matrix {
         }
 
         // draw travelers
-        for traveler in &self.travelers {
+        for traveler in &**self.travelers {
             let pos =
                 ((traveler.location.as_vec2() + Vec2::splat(0.5)) * cell_size + offset) * scale;
             draw_circle(pos.x, pos.y, 10.0 * scale, BLUE);
@@ -347,33 +348,26 @@ impl Matrix {
     }
 
     fn step_travelers(&mut self) -> Result<(), ()> {
-        let mut endpoint = self.travelers.len();
-        let mut ix = 0;
-
-        while ix < endpoint {
-            let traveler = &mut self.travelers[ix];
-
+        self.travelers.try_swap(|mut traveler| 'a: {
             let instruction = if traveler.location.cmplt(self.dims.as_ivec2()).all() {
                 self.storage.get(&traveler.location).ok_or(())?
             } else if traveler.location == self.dims.as_ivec2() - ivec2(1, 0) {
-                if self.output.is_none() {
-                    endpoint -= 1;
-                    self.output = Some(self.travelers.remove(ix).value);
-                    continue;
+                break 'a if self.output.is_none() {
+                    self.output = Some(traveler.value);
+                    Ok(smallvec![])
                 } else {
-                    return Err(()); // will be a different type of error than out-of-bounds
-                }
+                    Err(()) // will be a different type of error than out-of-bounds
+                };
             } else if traveler.location == self.dims.as_ivec2() - ivec2(2, 0) {
-                endpoint -= 1;
-                self.output_stream.push(self.travelers.remove(ix).value);
-                continue;
+                self.output_stream.push(traveler.value);
+                break 'a Ok(smallvec![]);
             } else {
-                return Err(());
+                break 'a Err(());
             };
 
             let aligned = traveler.direction == instruction.direction;
 
-            match &instruction.command {
+            let out: SmallVec<[_; 2]> = match &instruction.command {
                 L3XCommand::Multiply(with) => {
                     if aligned {
                         traveler.value *= with;
@@ -384,12 +378,15 @@ impl Matrix {
                     } else {
                         traveler.direct(instruction.direction.opposite());
                     }
+
+                    smallvec![traveler]
                 }
                 L3XCommand::Duplicate => {
                     let mut new_traveler = traveler.clone();
                     traveler.direct(instruction.direction);
                     new_traveler.direct(instruction.direction.opposite());
-                    self.travelers.push(new_traveler);
+
+                    smallvec![traveler, new_traveler]
                 }
                 L3XCommand::Queue => {
                     if aligned {
@@ -398,20 +395,19 @@ impl Matrix {
                             .and_modify(|q| q.push_back(traveler.value.clone()))
                             .or_insert_with(|| vec![traveler.value.clone()].into());
                     } else {
-                        endpoint -= 1;
-                        let mut traveler = self.travelers.remove(ix);
                         traveler.direction = instruction.direction;
                         self.waiting_for_queue.push((traveler, Registers::ONE));
                     }
+                    smallvec![]
                 }
                 L3XCommand::Annihilate => {
                     traveler.value = Registers::ONE;
-                    traveler.direct(instruction.direction)
+                    traveler.direct(instruction.direction);
+                    smallvec![traveler]
                 }
-            }
-
-            ix += 1;
-        }
+            };
+            Ok(out)
+        })?;
 
         self.waiting_for_queue
             .e_drain_where(|(traveler, u)| {

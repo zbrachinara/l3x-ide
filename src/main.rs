@@ -11,6 +11,7 @@ mod input;
 mod l3x;
 mod matrix;
 mod traveler;
+mod swapbuffer;
 
 pub fn mouse() -> Vec2 {
     let (mouse_x, mouse_y) = mouse_position();
