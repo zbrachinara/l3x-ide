@@ -193,9 +193,25 @@ pub struct Traveler {
 }
 
 impl Traveler {
-    pub fn direct(&mut self, direction: Direction) {
+    pub fn direct(mut self, direction: Direction) -> Self {
         self.location += IVec2::from(direction);
         self.direction = direction;
+        self
+    }
+
+    pub fn value(mut self, value: Registers) -> Self {
+        self.value = value;
+        self
+    }
+
+    pub fn mul(mut self, value: &Registers) -> Self {
+        self.value *= value;
+        self
+    }
+
+    pub fn step(mut self) -> Self {
+        self.location += IVec2::from(self.direction);
+        self
     }
 }
 

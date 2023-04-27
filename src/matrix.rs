@@ -369,24 +369,19 @@ impl Matrix {
 
             let out: SmallVec<[_; 2]> = match &instruction.command {
                 L3XCommand::Multiply(with) => {
-                    if aligned {
-                        traveler.value *= with;
-                        traveler.direct(instruction.direction);
+                    smallvec![if aligned {
+                        traveler.mul(with).direct(instruction.direction)
                     } else if let Some(div) = traveler.value.try_div(with) {
-                        traveler.value = div;
-                        traveler.direct(instruction.direction);
+                        traveler.value(div).direct(instruction.direction)
                     } else {
-                        traveler.direct(instruction.direction.opposite());
-                    }
-
-                    smallvec![traveler]
+                        traveler.direct(instruction.direction.opposite())
+                    }]
                 }
                 L3XCommand::Duplicate => {
-                    let mut new_traveler = traveler.clone();
-                    traveler.direct(instruction.direction);
-                    new_traveler.direct(instruction.direction.opposite());
-
-                    smallvec![traveler, new_traveler]
+                    smallvec![
+                        traveler.clone().direct(instruction.direction),
+                        traveler.direct(instruction.direction.opposite())
+                    ]
                 }
                 L3XCommand::Queue => {
                     if aligned {
@@ -401,9 +396,7 @@ impl Matrix {
                     smallvec![]
                 }
                 L3XCommand::Annihilate => {
-                    traveler.value = Registers::ONE;
-                    traveler.direct(instruction.direction);
-                    smallvec![traveler]
+                    smallvec![traveler.value(Registers::ONE).direct(instruction.direction)]
                 }
             };
             Ok(out)
@@ -417,10 +410,8 @@ impl Matrix {
                     .map(|register| *u = register)
                     .is_some()
             })
-            .for_each(|(mut traveler, multiplier)| {
-                traveler.value *= multiplier;
-                traveler.direct(traveler.direction); // needs to step off the queue cell
-                self.travelers.push(traveler)
+            .for_each(|(traveler, multiplier)| {
+                self.travelers.push(traveler.mul(&multiplier).step())
             });
 
         Ok(())
