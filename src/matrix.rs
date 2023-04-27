@@ -349,7 +349,14 @@ impl Matrix {
                         traveler.direction = instruction.direction.opposite();
                     }
                 }
-                L3XCommand::Duplicate => todo!(),
+                L3XCommand::Duplicate => {
+                    let mut new_traveler = traveler.clone();
+                    traveler.position += IVec2::from(instruction.direction);
+                    traveler.direction = instruction.direction;
+                    new_traveler.position -= IVec2::from(instruction.direction);
+                    new_traveler.direction = instruction.direction.opposite();
+                    self.travelers.push(new_traveler);
+                }
                 L3XCommand::Queue => todo!(),
                 L3XCommand::Annihilate => todo!(),
             }

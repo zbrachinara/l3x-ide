@@ -177,6 +177,7 @@ mod test_registers {
     }
 }
 
+#[derive(Clone)]
 pub struct Traveler {
     pub value: Registers, // TODO new number type representing registers directly
     pub position: IVec2,
