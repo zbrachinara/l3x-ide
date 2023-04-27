@@ -1,8 +1,9 @@
+use bitflags::BitFlags;
 use egui::Ui;
 use itertools::Itertools;
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use vec_drain_where::VecDrainWhereExt;
 
 use crate::{
@@ -16,6 +17,24 @@ pub enum MatrixMode {
     #[default]
     L3,
     L3X,
+}
+
+bitflags::bitflags! {
+    #[derive(Copy, Clone)]
+    struct Alignments: u8 {
+        const ALIGNED = 0b01;
+        const UNALIGNED = 0b10;
+    }
+}
+
+impl Alignments {
+    fn aligned(one: Direction, the_other: Direction) -> Self {
+        if one == the_other {
+            Self::ALIGNED
+        } else {
+            Self::UNALIGNED
+        }
+    }
 }
 
 impl MatrixMode {
@@ -191,7 +210,11 @@ impl Matrix {
 
     fn step(&mut self) {
         // TODO check errors and cleanup output travelers
-        self.step_travelers();
+        if self.collision_free() {
+            self.step_travelers();
+        } else {
+            log::error!("Collision detected");
+        }
     }
 
     pub fn config_ui(&mut self, ui: &mut Ui) {
@@ -346,6 +369,43 @@ impl Matrix {
                 ui.label(register.to_string());
             }
         }
+    }
+
+    fn is_output_cell(&self, location: IVec2) -> bool {
+        location == self.dims.as_ivec2() - ivec2(1, 0)
+            || self.mode == MatrixMode::L3X && location == self.dims.as_ivec2() - ivec2(2, 0)
+    }
+
+    /// Iterates through the travelers stored in this matrix and checks whether they collide.
+    /// Ignores collisions on a queue *&&* between a traveler aligned and one not aligned with the
+    /// queue.
+    fn collision_free(&self) -> bool {
+        let mut collision_check = HashSet::new();
+        let mut queue_collision_check = HashMap::<_, Alignments>::new();
+        self.travelers.iter().all(|traveler| {
+            self.storage
+                .get(&traveler.location)
+                .map(|l3x| {
+                    if l3x.command == L3XCommand::Queue {
+                        let aligned = Alignments::aligned(l3x.direction, traveler.direction);
+                        if let Some(alignments) = queue_collision_check.get_mut(&traveler.location)
+                        {
+                            if alignments.contains(aligned) {
+                                false
+                            } else {
+                                *alignments &= aligned;
+                                true
+                            }
+                        } else {
+                            queue_collision_check.insert(traveler.location, aligned);
+                            true
+                        }
+                    } else {
+                        collision_check.insert(traveler.location)
+                    }
+                })
+                .unwrap_or_else(|| self.is_output_cell(traveler.location))
+        })
     }
 
     fn step_travelers(&mut self) -> Result<(), ()> {
