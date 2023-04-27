@@ -1,4 +1,5 @@
 use egui::Ui;
+use if_chain::if_chain;
 use itertools::Itertools;
 use macroquad::prelude::*;
 use std::collections::{HashMap, VecDeque};
@@ -35,6 +36,8 @@ pub struct Matrix {
     queues: HashMap<IVec2, VecDeque<Registers>>,
     waiting_for_queue: Vec<(Traveler, Registers)>,
     travelers: Vec<Traveler>,
+    output: Option<Registers>,
+    output_stream: Vec<Registers>,
 
     focus_editing: u8,
     single_input_next_frame_focus: bool,
@@ -57,6 +60,8 @@ impl Default for Matrix {
             queues: Default::default(),
             waiting_for_queue: Default::default(),
             travelers: Default::default(),
+            output: Default::default(),
+            output_stream: Default::default(),
             focus_editing: 0,
             single_input_next_frame_focus: false,
             single_input_text: Default::default(),
@@ -177,6 +182,9 @@ impl Matrix {
         self.simulating = false;
         self.travelers.clear();
         self.queues.clear();
+        self.waiting_for_queue.clear();
+        self.output = None;
+        self.output_stream.clear();
     }
 
     fn step(&mut self) {
