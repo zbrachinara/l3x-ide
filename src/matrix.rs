@@ -354,7 +354,10 @@ impl Matrix {
                     self.travelers.push(new_traveler);
                 }
                 L3XCommand::Queue => todo!(),
-                L3XCommand::Annihilate => todo!(),
+                L3XCommand::Annihilate => {
+                    traveler.value = Registers::ONE;
+                    traveler.direct(instruction.direction)
+                },
             }
 
             ix += 1;

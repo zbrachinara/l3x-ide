@@ -17,6 +17,10 @@ use crate::l3x::Direction;
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Registers(pub Vec<(u64, u32)>);
 
+impl Registers {
+    pub const ONE: Self = Registers(vec![]);
+}
+
 impl TryFrom<u64> for Registers {
     type Error = ();
 
