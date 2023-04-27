@@ -77,6 +77,7 @@ impl Default for Matrix {
 impl Matrix {
     pub fn draw(&self, offset: Vec2, cell_size: f32, scale: f32) {
         let cell_size = cell_size * scale;
+        let offset = offset * scale;
         let font_size = 32.0 * scale;
         let text_offset = vec2(0.05, 0.67) * cell_size;
 
@@ -96,7 +97,7 @@ impl Matrix {
         }
 
         for (x, y) in (0..self.dims.x).cartesian_product(0..self.dims.y) {
-            let lower = (uvec2(x, y).as_vec2() * cell_size + offset) * scale;
+            let lower = (uvec2(x, y).as_vec2() * cell_size) + offset;
             if matches!(self.selecting, Some(vec) if vec == uvec2(x, y).as_ivec2()) {
                 draw_rectangle(lower.x, lower.y, cell_size, cell_size, GRAY);
             }
