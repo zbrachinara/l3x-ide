@@ -111,7 +111,7 @@ impl Matrix {
         // draw travelers
         for traveler in &self.travelers {
             let pos =
-                ((traveler.position.as_vec2() + Vec2::splat(0.5)) * cell_size + offset) * scale;
+                ((traveler.location.as_vec2() + Vec2::splat(0.5)) * cell_size + offset) * scale;
             draw_circle(pos.x, pos.y, 10.0 * scale, BLUE);
         }
     }
@@ -159,7 +159,7 @@ impl Matrix {
     fn init_simulation_inner(&mut self) -> Option<()> {
         self.travelers.push(Traveler {
             value: self.single_input.clone()?,
-            position: IVec2::ZERO,
+            location: IVec2::ZERO,
             direction: Direction::Down,
         });
 
@@ -180,6 +180,7 @@ impl Matrix {
     }
 
     fn step(&mut self) {
+        // TODO check errors and cleanup output travelers
         self.step_travelers();
     }
 
@@ -309,7 +310,7 @@ impl Matrix {
                 ui.label("Travelers on this cell");
                 self.travelers
                     .iter()
-                    .filter(|&&Traveler { position, .. }| position == location)
+                    .filter(|&&Traveler { location: loc, .. }| loc == location)
                     .for_each(|traveler| {
                         ui.label(traveler.to_string());
                     });
@@ -331,8 +332,8 @@ impl Matrix {
 
         while ix < endpoint {
             let traveler = &mut self.travelers[ix];
-            let instruction = (traveler.position.cmplt(self.dims.as_ivec2()).all())
-                .then(|| self.storage.get(&traveler.position))
+            let instruction = (traveler.location.cmplt(self.dims.as_ivec2()).all())
+                .then(|| self.storage.get(&traveler.location))
                 .flatten()
                 .ok_or(())?;
             let aligned = traveler.direction == instruction.direction;
@@ -358,7 +359,7 @@ impl Matrix {
                 L3XCommand::Queue => {
                     if aligned {
                         self.queues
-                            .entry(traveler.position)
+                            .entry(traveler.location)
                             .and_modify(|q| q.push_back(traveler.value.clone()))
                             .or_insert_with(|| vec![traveler.value.clone()].into());
                     } else {
@@ -380,7 +381,7 @@ impl Matrix {
         self.waiting_for_queue
             .e_drain_where(|(traveler, u)| {
                 self.queues
-                    .get_mut(&traveler.position)
+                    .get_mut(&traveler.location)
                     .and_then(|q| q.pop_front())
                     .map(|register| *u = register)
                     .is_some()

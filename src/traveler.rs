@@ -188,13 +188,13 @@ mod test_registers {
 #[derive(Clone)]
 pub struct Traveler {
     pub value: Registers, // TODO new number type representing registers directly
-    pub position: IVec2,
+    pub location: IVec2,
     pub direction: Direction,
 }
 
 impl Traveler {
     pub fn direct(&mut self, direction: Direction) {
-        self.position += IVec2::from(direction);
+        self.location += IVec2::from(direction);
         self.direction = direction;
     }
 }
