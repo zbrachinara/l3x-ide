@@ -35,7 +35,9 @@ impl TryFrom<u64> for Registers {
             for &e in factorization.factors.iter() {
                 state.entry(e).and_modify(|v| *v += 1).or_insert(1);
             }
-            Ok(Self(state.into_iter().collect()))
+            let mut res: Vec<_> = state.into_iter().collect();
+            res.sort_by(|a,b|a.0.cmp(&b.0));
+            Ok(Self(res))
         }
     }
 }
@@ -147,6 +149,10 @@ mod test_registers {
     }
 
     #[test]
+    fn create() {
+        assert_eq!(Registers::from_str("30"),Ok(Registers(vec![(2,1),(3,1),(5,1)])))
+    }
+    #[test]
     fn multiplication() {
         let r1 = Registers(vec![(2, 1), (5, 1)]);
         let r2 = Registers(vec![(3, 1), (7, 1)]);
@@ -167,11 +173,12 @@ mod test_registers {
 
     #[test]
     fn division() {
-        let r1 = Registers(vec![(17, 1)]);
-        let r2 = Registers(vec![(13, 1)]);
+        let r1 = Registers(vec![(2, 1),(5,1),(3,1)]);
+        let r2 = Registers(vec![(3, 1)]);
+        println!("{}", r1.try_div(&r2).unwrap());
         assert_eq!(
             r1.try_div(&r2),
-            None,
+            Some(Registers(vec![(2,1),(5,1)])),
             "Coprime numbers should fail to divide"
         );
 
