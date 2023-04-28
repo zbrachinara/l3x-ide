@@ -44,7 +44,7 @@ async fn main() {
         clear_background(BEIGE);
 
         input_driver.update();
-        let logical = (mouse() - offset) / (CELL_SIZE * scale);
+        let logical = (mouse() - offset * scale) / (CELL_SIZE * scale);
         if input_driver.lmb_hold().is_some() {
             matrix.set_dims((logical + Vec2::splat(0.5)).as_ivec2())
         }
@@ -91,10 +91,10 @@ async fn main() {
 
         matrix.draw(offset, CELL_SIZE, scale);
         egui_macroquad::draw();
-        time+=1;
-        if(time>matrix.period){
-            time=time%matrix.period;
-            if (matrix.stepping){
+        time += 1;
+        if time > matrix.period {
+            time %= matrix.period;
+            if matrix.stepping {
                 matrix.step();
             }
         }
