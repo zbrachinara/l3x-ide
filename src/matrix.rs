@@ -1,7 +1,7 @@
 use async_executor::{LocalExecutor, Task};
 use if_chain::if_chain;
 use macroquad::prelude::*;
-use rfd::{AsyncFileDialog, FileHandle};
+//use rfd::{AsyncFileDialog, FileHandle};
 use smallvec::{smallvec, SmallVec};
 use std::collections::{HashMap, HashSet, VecDeque};
 use vec_drain_where::VecDrainWhereExt;
@@ -55,6 +55,8 @@ pub struct Matrix<'a> {
     dims: UVec2,
     selecting: Option<IVec2>,
     selecting_text: String,
+    pub period: u16,
+    pub stepping: bool,
 
     queues: HashMap<IVec2, VecDeque<Registers>>,
     waiting_for_queue: Vec<(Traveler, Registers)>,
@@ -84,6 +86,8 @@ impl<'a> Default for Matrix<'a> {
             dims: uvec2(1, 1),
             selecting: Default::default(),
             selecting_text: Default::default(),
+            period: 30,
+            stepping: false,
             queues: Default::default(),
             waiting_for_queue: Default::default(),
             travelers: Default::default(),
@@ -239,7 +243,7 @@ impl<'a> Matrix<'a> {
         self.output_stream.clear();
     }
 
-    fn step(&mut self) {
+    pub fn step(&mut self) {
         // TODO check errors and cleanup output travelers
         if self.collision_free() {
             self.step_travelers();
@@ -354,3 +358,4 @@ impl<'a> Matrix<'a> {
         Ok(())
     }
 }
+
