@@ -28,7 +28,7 @@ impl EguiExt for Ui {
     }
 }
 
-impl <'a> Matrix<'a> {
+impl<'a> Matrix<'a> {
     fn ui_simulation_tools(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.scope(|ui| {
@@ -64,11 +64,6 @@ impl <'a> Matrix<'a> {
                     }
                 });
             });
-
-            if ui.button("Import").clicked() {
-                self.start_file_import();
-            }
-            ui.button("Export");
         });
     }
 
@@ -183,8 +178,24 @@ impl <'a> Matrix<'a> {
         }
     }
 
+    fn ui_import(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            ui.scope(|ui| {
+                ui.set_enabled(!self.simulating);
+                if ui.button("Import").clicked() {
+                    self.start_file_import();
+                }
+            });
+            ui.button("Export");
+        });
+    }
+
     pub fn config_ui(&mut self, ui: &mut Ui) {
-        ui.collapsing_open("Simulation", |ui| self.ui_simulation_tools(ui));
+        ui.heading("Simulation");
+        self.ui_simulation_tools(ui);
+
+        ui.separator();
+        ui.collapsing("Import tools", |ui| self.ui_import(ui));
 
         ui.separator();
         ui.collapsing_open("Single input", |ui| self.ui_edit_single_input(ui));
