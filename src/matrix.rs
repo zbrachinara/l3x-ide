@@ -271,11 +271,11 @@ impl Matrix {
     }
 
     fn step_travelers(&mut self) -> Result<(), ()> {
-        self.travelers.try_swap(|mut traveler| 'a: {
+        self.travelers.try_swap(|mut traveler| {
             let instruction = if traveler.location.cmplt(self.dims.as_ivec2()).all() {
                 self.instructions.get(&traveler.location).ok_or(())?
             } else if traveler.location == self.dims.as_ivec2() - ivec2(1, 0) {
-                break 'a if self.output.is_none() {
+                return if self.output.is_none() {
                     self.output = Some(traveler.value);
                     Ok(smallvec![])
                 } else {
@@ -283,9 +283,9 @@ impl Matrix {
                 };
             } else if traveler.location == self.dims.as_ivec2() - ivec2(2, 0) {
                 self.output_stream.push(traveler.value);
-                break 'a Ok(smallvec![]);
+                return Ok(smallvec![]);
             } else {
-                break 'a Err(());
+                return Err(());
             };
 
             let aligned = traveler.direction == instruction.direction;
