@@ -1,19 +1,19 @@
 use csv::ReaderBuilder;
-use futures_lite::future::block_on;
 use macroquad::prelude::*;
 use ndarray_csv::Array2Reader;
-use rfd::AsyncFileDialog;
 use std::collections::HashMap;
 
 use crate::l3x::{L3XParseError, MaybeL3X};
 
 use super::Matrix;
 
+#[cfg(not(target_arch = "wasm32"))]
 impl<'a> Matrix<'a> {
     pub fn start_file_import(&mut self) {
-        if self.read_file.is_none() {
-            self.read_file = Some(self.task_executor.spawn(async {
-                let file = AsyncFileDialog::new().pick_file().await;
+        let states = &mut self.future_states;
+        if states.read_file.is_none() {
+            states.read_file = Some(states.task_executor.spawn(async {
+                let file = rfd::AsyncFileDialog::new().pick_file().await;
                 match file {
                     Some(fi) => Some(fi.read().await),
                     None => None,
@@ -23,10 +23,13 @@ impl<'a> Matrix<'a> {
     }
 
     pub fn try_open_file(&mut self) {
+        let states = &mut self.future_states;
         if_chain::if_chain! {
-            if let Some(ref task) = self.read_file;
+            if let Some(ref task) = states.read_file;
             if task.is_finished();
-            if let Some(file) = block_on(std::mem::take(&mut self.read_file).unwrap());
+            if let Some(file) = futures_lite::future::block_on(
+                std::mem::take(&mut states.read_file).unwrap()
+            );
             then {
                 self.import_data(&file);
             }

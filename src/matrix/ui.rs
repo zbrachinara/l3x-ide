@@ -178,6 +178,7 @@ impl<'a> Matrix<'a> {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn ui_import(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.scope(|ui| {
@@ -188,6 +189,11 @@ impl<'a> Matrix<'a> {
             });
             ui.button("Export");
         });
+    }
+
+    
+    #[cfg(target_arch = "wasm32")]
+    fn ui_import(&mut self, ui: &mut Ui) {
     }
 
     pub fn config_ui(&mut self, ui: &mut Ui) {
