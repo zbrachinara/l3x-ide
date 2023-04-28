@@ -32,7 +32,6 @@ async fn main() {
     }
 
     let mut matrix = Matrix::default();
-
     const CELL_SIZE: f32 = 60.0;
     const SCALE_RATE: f32 = 0.02;
     let mut offset = Vec2 { x: 100.0, y: 100.0 };
@@ -40,7 +39,7 @@ async fn main() {
 
     let mut rmb_position = None;
     let mut input_driver = InputDriver::default();
-
+    let mut time = 0;
     loop {
         clear_background(BEIGE);
 
@@ -92,7 +91,13 @@ async fn main() {
 
         matrix.draw(offset, CELL_SIZE, scale);
         egui_macroquad::draw();
-
+        time+=1;
+        if(time>matrix.period){
+            time=time%matrix.period;
+            if (matrix.stepping){
+                matrix.step();
+            }
+        }
         next_frame().await
     }
 }
