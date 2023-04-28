@@ -39,10 +39,18 @@ impl<'a> Matrix<'a> {
             });
             ui.scope(|ui| {
                 ui.set_enabled(self.simulating);
-                if ui.button("▶").on_hover_text("play (step automatically)").clicked() {
-                    self.stepping=true;
+                if ui
+                    .button("▶")
+                    .on_hover_text("play (step automatically)")
+                    .clicked()
+                {
+                    self.stepping = true;
                 };
-                if ui.button("⏸").on_hover_text("pause (stop autostepping)").clicked() {
+                if ui
+                    .button("⏸")
+                    .on_hover_text("pause (stop autostepping)")
+                    .clicked()
+                {
                     self.stepping = false;
                 };
                 if ui.button("⏭").on_hover_text("step by one cycle").clicked() {
@@ -54,7 +62,7 @@ impl<'a> Matrix<'a> {
                     .clicked()
                 {
                     self.cleanup_simulation();
-                    self.stepping=false;
+                    self.stepping = false;
                 }
             });
             ui.separator();
@@ -69,6 +77,11 @@ impl<'a> Matrix<'a> {
                     }
                 });
             });
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("Simulation rate (in frame time)");
+            ui.add(egui::widgets::Slider::new(&mut self.period, 5..=120))
         });
     }
 
@@ -196,10 +209,8 @@ impl<'a> Matrix<'a> {
         });
     }
 
-    
     #[cfg(target_arch = "wasm32")]
-    fn ui_import(&mut self, ui: &mut Ui) {
-    }
+    fn ui_import(&mut self, ui: &mut Ui) {}
 
     pub fn config_ui(&mut self, ui: &mut Ui) {
         ui.heading("Simulation");

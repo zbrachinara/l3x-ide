@@ -90,7 +90,7 @@ impl<'a> Default for Matrix<'a> {
             dims: uvec2(1, 1),
             selecting: Default::default(),
             selecting_text: Default::default(),
-            period: 4,
+            period: 10,
             stepping: false,
             queues: Default::default(),
             waiting_for_queue: Default::default(),
