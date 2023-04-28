@@ -54,6 +54,7 @@ impl<'a> Matrix<'a> {
                     .clicked()
                 {
                     self.cleanup_simulation();
+                    self.stepping=false;
                 }
             });
             ui.separator();
