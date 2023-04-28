@@ -168,7 +168,7 @@ impl<'a> Matrix<'a> {
         // draw travelers
         for traveler in &**self.travelers {
             let pos =
-                ((traveler.location.as_vec2() + Vec2::splat(0.5)) * cell_size + offset) * scale;
+                (traveler.location.as_vec2() + Vec2::splat(0.5)) * cell_size + offset;
             draw_circle(pos.x, pos.y, 10.0 * scale, BLUE);
         }
     }
