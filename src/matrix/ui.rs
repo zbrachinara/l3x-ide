@@ -28,7 +28,7 @@ impl EguiExt for Ui {
     }
 }
 
-impl Matrix {
+impl <'a> Matrix<'a> {
     fn ui_simulation_tools(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.scope(|ui| {
@@ -65,7 +65,9 @@ impl Matrix {
                 });
             });
 
-            ui.button("Import");
+            if ui.button("Import").clicked() {
+                self.start_file_import();
+            }
             ui.button("Export");
         });
     }

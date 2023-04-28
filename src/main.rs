@@ -10,8 +10,8 @@ use crate::matrix::Matrix;
 mod input;
 mod l3x;
 mod matrix;
-mod traveler;
 mod swapbuffer;
+mod traveler;
 
 pub fn mouse() -> Vec2 {
     let (mouse_x, mouse_y) = mouse_position();
@@ -87,6 +87,8 @@ async fn main() {
                     })
                 });
         });
+
+        matrix.update();
 
         matrix.draw(offset, CELL_SIZE, scale);
         egui_macroquad::draw();
