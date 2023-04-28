@@ -113,6 +113,7 @@ impl Matrix {
 
     fn ui_cell_value_view(&mut self, ui: &mut Ui, location: IVec2) {
         ui.set_enabled(!self.simulating);
+        ui.label("at location {location}");
         ui.horizontal(|ui| {
             let textedit = ui.text_edit_singleline(&mut self.selecting_text);
             match self.focus_editing {
@@ -191,7 +192,7 @@ impl Matrix {
 
         if let Some(location) = self.selecting {
             ui.separator();
-            ui.collapsing_open(format!("Cell value @ {location}"), |ui| {
+            ui.collapsing_open(format!("Cell value"), |ui| {
                 self.ui_cell_value_view(ui, location)
             });
 
