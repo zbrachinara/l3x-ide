@@ -52,18 +52,18 @@ impl Matrix {
                     self.cleanup_simulation();
                 }
             });
-        });
-    }
-
-    fn ui_l3_mode(&mut self, ui: &mut Ui) {
-        ui.set_enabled(!self.simulating);
-        ui.horizontal(|ui| {
-            let l3_radio = ui.radio_value(&mut self.mode, MatrixMode::L3, "L3");
-            let l3x_radio = ui.radio_value(&mut self.mode, MatrixMode::L3X, "L3X");
-            if l3_radio.union(l3x_radio).changed() {
-                self.dims = self.dims.max(self.mode.minimum_size());
-                self.force_queue_l3x()
-            }
+            ui.separator();
+            ui.scope(|ui| {
+                ui.set_enabled(!self.simulating);
+                ui.horizontal(|ui| {
+                    let l3_radio = ui.radio_value(&mut self.mode, MatrixMode::L3, "L3");
+                    let l3x_radio = ui.radio_value(&mut self.mode, MatrixMode::L3X, "L3X");
+                    if l3_radio.union(l3x_radio).changed() {
+                        self.dims = self.dims.max(self.mode.minimum_size());
+                        self.force_queue_l3x()
+                    }
+                });
+            })
         });
     }
 
@@ -178,9 +178,6 @@ impl Matrix {
 
     pub fn config_ui(&mut self, ui: &mut Ui) {
         ui.collapsing_open("Simulation", |ui| self.ui_simulation_tools(ui));
-
-        ui.separator();
-        ui.collapsing_open("L3 Mode", |ui| self.ui_l3_mode(ui));
 
         ui.separator();
         ui.collapsing_open("Single input", |ui| self.ui_edit_single_input(ui));
