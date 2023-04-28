@@ -1,5 +1,4 @@
 use if_chain::if_chain;
-use itertools::Itertools;
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -96,6 +95,8 @@ impl Default for Matrix {
 
 impl Matrix {
     pub fn draw(&self, offset: Vec2, cell_size: f32, scale: f32) {
+        let primary_color = DARKBROWN;
+
         let cell_size = cell_size * scale;
         let offset = offset * scale;
         let font_size = 32.0 * scale;
@@ -103,17 +104,16 @@ impl Matrix {
 
         // annotate input and output
         let io_text_offset = vec2(0.4, 0.67) * cell_size;
-        let i_single_text = offset + vec2(0.0, -cell_size) + io_text_offset;
-        let o_single_text =
-            offset + (self.dims - uvec2(1, 0)).as_vec2() * cell_size + io_text_offset;
-        draw_text("I", i_single_text.x, i_single_text.y, font_size, WHITE);
-        draw_text("O", o_single_text.x, o_single_text.y, font_size, WHITE);
+        let i_single = offset + vec2(0.0, -cell_size) + io_text_offset;
+        let o_single = offset + (self.dims - uvec2(1, 0)).as_vec2() * cell_size + io_text_offset;
+        draw_text("I", i_single.x, i_single.y, font_size, primary_color);
+        draw_text("O", o_single.x, o_single.y, font_size, primary_color);
         if self.mode == MatrixMode::L3X {
-            let i_stream_text = offset + vec2(cell_size, -cell_size) + io_text_offset;
-            let o_stream_text =
+            let i_stream = offset + vec2(cell_size, -cell_size) + io_text_offset;
+            let o_stream =
                 offset + (self.dims - uvec2(2, 0)).as_vec2() * cell_size + io_text_offset;
-            draw_text("I_s", i_stream_text.x, i_stream_text.y, font_size, WHITE);
-            draw_text("O_s", o_stream_text.x, o_stream_text.y, font_size, WHITE);
+            draw_text("I_s", i_stream.x, i_stream.y, font_size, primary_color);
+            draw_text("O_s", o_stream.x, o_stream.y, font_size, primary_color);
         }
 
         // highlight selected square
@@ -122,19 +122,19 @@ impl Matrix {
             if location.cmplt(self.dims.as_ivec2()).all();
             then {
                 let lower = (location.as_vec2() * cell_size) + offset;
-                draw_rectangle(lower.x, lower.y, cell_size, cell_size, GRAY);
+                draw_rectangle(lower.x, lower.y, cell_size, cell_size, LIGHTGRAY);
             }
         }
         // draw gridlines
         for column in 0..=self.dims.x {
             let lower = vec2(column as f32, 0.) * cell_size + offset;
             let upper = lower + vec2(0., self.dims.y as f32) * cell_size;
-            draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, WHITE)
+            draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, primary_color)
         }
         for row in 0..=self.dims.y {
             let lower = vec2(0., row as f32) * cell_size + offset;
             let upper = lower + vec2(self.dims.x as f32, 0.) * cell_size;
-            draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, WHITE)
+            draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, primary_color)
         }
 
         for (location, instruction) in &self.storage {
@@ -146,7 +146,7 @@ impl Matrix {
                     (lower + text_offset).x,
                     (lower + text_offset).y,
                     font_size,
-                    WHITE,
+                    primary_color,
                 )
             }
         }

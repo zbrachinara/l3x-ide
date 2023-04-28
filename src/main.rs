@@ -42,7 +42,7 @@ async fn main() {
     let mut input_driver = InputDriver::default();
 
     loop {
-        clear_background(BLACK);
+        clear_background(BEIGE);
 
         input_driver.update();
         let logical = (mouse() - offset) / (CELL_SIZE * scale);
