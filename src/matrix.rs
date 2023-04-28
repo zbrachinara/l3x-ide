@@ -1,3 +1,4 @@
+use if_chain::if_chain;
 use itertools::Itertools;
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
@@ -115,6 +116,15 @@ impl Matrix {
             draw_text("O_s", o_stream_text.x, o_stream_text.y, font_size, WHITE);
         }
 
+        // highlight selected square
+        if_chain! {
+            if let Some(location) = self.selecting;
+            if location.cmplt(self.dims.as_ivec2()).all();
+            then {
+                let lower = (location.as_vec2() * cell_size) + offset;
+                draw_rectangle(lower.x, lower.y, cell_size, cell_size, GRAY);
+            }
+        }
         // draw gridlines
         for column in 0..=self.dims.x {
             let lower = vec2(column as f32, 0.) * cell_size + offset;
@@ -127,16 +137,12 @@ impl Matrix {
             draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, WHITE)
         }
 
-        for (x, y) in (0..self.dims.x).cartesian_product(0..self.dims.y) {
-            let lower = (uvec2(x, y).as_vec2() * cell_size) + offset;
-            if matches!(self.selecting, Some(vec) if vec == uvec2(x, y).as_ivec2()) {
-                draw_rectangle(lower.x, lower.y, cell_size, cell_size, GRAY);
-            }
-
-            // TODO represent cell contents graphically
-            if let Some(l3x) = self.storage.get(&uvec2(x, y).as_ivec2()) {
+        for (location, instruction) in &self.storage {
+            if location.cmplt(self.dims.as_ivec2()).all() {
+                let lower = (location.as_vec2() * cell_size) + offset;
+                // TODO represent cell contents graphically
                 draw_text(
-                    &l3x.to_string(),
+                    &instruction.to_string(),
                     (lower + text_offset).x,
                     (lower + text_offset).y,
                     font_size,
