@@ -48,7 +48,7 @@ impl MatrixMode {
 
 pub struct Matrix {
     mode: MatrixMode,
-    storage: HashMap<IVec2, L3X>,
+    instructions: HashMap<IVec2, L3X>,
     dims: UVec2,
     selecting: Option<IVec2>,
     selecting_text: String,
@@ -73,7 +73,7 @@ impl Default for Matrix {
     fn default() -> Self {
         Self {
             mode: Default::default(),
-            storage: Default::default(),
+            instructions: Default::default(),
             dims: uvec2(1, 1),
             selecting: Default::default(),
             selecting_text: Default::default(),
@@ -137,7 +137,7 @@ impl Matrix {
             draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, primary_color)
         }
 
-        for (location, instruction) in &self.storage {
+        for (location, instruction) in &self.instructions {
             if location.cmplt(self.dims.as_ivec2()).all() {
                 let lower = (location.as_vec2() * cell_size) + offset;
                 // TODO represent cell contents graphically
@@ -162,7 +162,7 @@ impl Matrix {
     /// Forces the streaming input square to be a queue when the matrix is in l3x mode
     fn force_queue_l3x(&mut self) {
         if self.mode == MatrixMode::L3X {
-            self.storage
+            self.instructions
                 .entry(ivec2(1, 0))
                 .and_modify(|e| e.command = L3XCommand::Queue)
                 .or_insert(L3X {
@@ -188,7 +188,7 @@ impl Matrix {
             self.focus_editing = 4;
             self.selecting = Some(location);
             self.selecting_text = self
-                .storage
+                .instructions
                 .get(&location)
                 .map(|l3x| l3x.to_string())
                 .unwrap_or("".to_string());
@@ -245,7 +245,7 @@ impl Matrix {
         let mut collision_check = HashSet::new();
         let mut queue_collision_check = HashMap::<_, Alignments>::new();
         self.travelers.iter().all(|traveler| {
-            self.storage
+            self.instructions
                 .get(&traveler.location)
                 .map(|l3x| {
                     if l3x.command == L3XCommand::Queue {
@@ -273,7 +273,7 @@ impl Matrix {
     fn step_travelers(&mut self) -> Result<(), ()> {
         self.travelers.try_swap(|mut traveler| 'a: {
             let instruction = if traveler.location.cmplt(self.dims.as_ivec2()).all() {
-                self.storage.get(&traveler.location).ok_or(())?
+                self.instructions.get(&traveler.location).ok_or(())?
             } else if traveler.location == self.dims.as_ivec2() - ivec2(1, 0) {
                 break 'a if self.output.is_none() {
                     self.output = Some(traveler.value);

@@ -131,7 +131,7 @@ impl Matrix {
                     {
                         log::warn!("In L3X mode, edited square *must* be a queue!")
                     } else {
-                        self.storage.insert(location, serialize_success);
+                        self.instructions.insert(location, serialize_success);
                     }
                 } else {
                     log::warn!("Serialization failure")
@@ -139,7 +139,7 @@ impl Matrix {
             }
             if ui.button("Clear").clicked() {
                 self.selecting_text.clear();
-                self.storage.remove(&location);
+                self.instructions.remove(&location);
                 self.force_queue_l3x();
             }
         });
