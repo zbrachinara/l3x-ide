@@ -115,12 +115,23 @@ impl Matrix {
             draw_text("O_s", o_stream_text.x, o_stream_text.y, font_size, WHITE);
         }
 
+        // draw gridlines
+        for column in 0..=self.dims.x {
+            let lower = vec2(column as f32, 0.) * cell_size + offset;
+            let upper = lower + vec2(0., self.dims.y as f32) * cell_size;
+            draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, WHITE)
+        }
+        for row in 0..=self.dims.y {
+            let lower = vec2(0., row as f32) * cell_size + offset;
+            let upper = lower + vec2(self.dims.x as f32, 0.) * cell_size;
+            draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, WHITE)
+        }
+
         for (x, y) in (0..self.dims.x).cartesian_product(0..self.dims.y) {
             let lower = (uvec2(x, y).as_vec2() * cell_size) + offset;
             if matches!(self.selecting, Some(vec) if vec == uvec2(x, y).as_ivec2()) {
                 draw_rectangle(lower.x, lower.y, cell_size, cell_size, GRAY);
             }
-            draw_rectangle_lines(lower.x, lower.y, cell_size, cell_size, 2.0, WHITE);
 
             // TODO represent cell contents graphically
             if let Some(l3x) = self.storage.get(&uvec2(x, y).as_ivec2()) {
