@@ -172,10 +172,12 @@ impl Matrix {
             ui.label(register.to_string());
         }
 
-        ui.separator();
-        ui.label("Output stream");
-        for register in &self.output_stream {
-            ui.label(register.to_string());
+        if self.mode == MatrixMode::L3X {
+            ui.separator();
+            ui.label("Output stream");
+            for register in &self.output_stream {
+                ui.label(register.to_string());
+            }
         }
     }
 
