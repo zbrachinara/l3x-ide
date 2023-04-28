@@ -1,11 +1,14 @@
-use async_executor::{LocalExecutor, Task};
 use if_chain::if_chain;
 use macroquad::prelude::*;
-//use rfd::{AsyncFileDialog, FileHandle};
 use smallvec::{smallvec, SmallVec};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    marker::PhantomData,
+};
 use vec_drain_where::VecDrainWhereExt;
 
+#[cfg(not(target_arch = "wasm32"))]
+mod future_states;
 mod import;
 mod ui;
 
@@ -74,8 +77,9 @@ pub struct Matrix<'a> {
     simulating: bool,
 
     // rust async moments
-    task_executor: LocalExecutor<'a>,
-    read_file: Option<Task<Option<Vec<u8>>>>,
+    #[cfg(not(target_arch = "wasm32"))]
+    future_states: future_states::FutureStates<'a>,
+    wasm_ignore_lifetime: PhantomData<&'a ()>,
 }
 
 impl<'a> Default for Matrix<'a> {
@@ -100,16 +104,20 @@ impl<'a> Default for Matrix<'a> {
             stream_input_text: Default::default(),
             stream_input: Default::default(),
             simulating: false,
-            task_executor: Default::default(),
-            read_file: Default::default(),
+            #[cfg(not(target_arch = "wasm32"))]
+            future_states: Default::default(),
+            wasm_ignore_lifetime: Default::default(),
         }
     }
 }
 
 impl<'a> Matrix<'a> {
     pub fn update(&mut self) {
-        self.task_executor.try_tick();
-        self.try_open_file();
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.future_states.task_executor.try_tick();
+            self.try_open_file();
+        }
     }
 
     pub fn draw(&self, offset: Vec2, cell_size: f32, scale: f32) {
@@ -171,8 +179,7 @@ impl<'a> Matrix<'a> {
 
         // draw travelers
         for traveler in &**self.travelers {
-            let pos =
-                (traveler.location.as_vec2() + Vec2::splat(0.5)) * cell_size + offset;
+            let pos = (traveler.location.as_vec2() + Vec2::splat(0.5)) * cell_size + offset;
             draw_circle(pos.x, pos.y, 10.0 * scale, BLUE);
         }
     }
