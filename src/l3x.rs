@@ -31,6 +31,21 @@ pub enum L3XParseError {
     NumberOverflow,
     WrongLength,
     UnaccountedCharacters,
+    Empty,
+}
+
+pub enum MaybeL3X {
+    Some(L3X),
+    None,
+}
+
+impl From<MaybeL3X> for Option<L3X> {
+    fn from(value: MaybeL3X) -> Self {
+        match value {
+            MaybeL3X::Some(v) => Some(v),
+            MaybeL3X::None => None,
+        }
+    }
 }
 
 impl Direction {
@@ -73,7 +88,19 @@ impl TryFrom<&str> for L3X {
     type Error = L3XParseError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Option::from(MaybeL3X::try_from(value)?).ok_or(L3XParseError::Empty)
+    }
+}
+
+impl TryFrom<&str> for MaybeL3X {
+    type Error = L3XParseError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
         let value = value.trim();
+
+        if value.is_empty() {
+            return Ok(Self::None)
+        }
 
         let direction_char = value.chars().last().ok_or(L3XParseError::WrongLength)?;
         let direction: Direction = direction_char.try_into()?;
@@ -110,7 +137,7 @@ impl TryFrom<&str> for L3X {
             }
         };
 
-        Ok(Self { direction, command })
+        Ok(Self::Some(L3X { direction, command }))
     }
 }
 

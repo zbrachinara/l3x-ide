@@ -3,8 +3,9 @@ use futures_lite::future::block_on;
 use macroquad::prelude::*;
 use ndarray_csv::Array2Reader;
 use rfd::AsyncFileDialog;
+use std::collections::HashMap;
 
-use crate::l3x::{L3XParseError, L3X};
+use crate::l3x::{L3XParseError, MaybeL3X};
 
 use super::Matrix;
 
@@ -34,22 +35,24 @@ impl<'a> Matrix<'a> {
                     return // error
                 }
 
-                self.instructions.clear();
-
                 let mut max_loc = IVec2::ZERO;
+                let mut instruction_buffer = HashMap::new();
                 if let Err(err) = array.columns().into_iter().enumerate().flat_map(|(x, col)| {
                     col.into_iter().enumerate().map(move |(y, elem)| {
                         (ivec2(x as i32, y as i32), elem)
                     })
                 }).try_for_each(|(loc, elem)| {
-                    max_loc = max_loc.max(loc);
-                    let l3x = L3X::try_from(elem.as_str())?;
-                    self.instructions.insert(loc, l3x);
+                    log::trace!("trying cell: {elem} at {loc}");
+                    if let MaybeL3X::Some(l3x) = MaybeL3X::try_from(elem.as_str())? {
+                        max_loc = max_loc.max(loc);
+                        instruction_buffer.insert(loc, l3x);
+                    }
                     Result::<_, L3XParseError>::Ok(())
                 }) {
-                    log::warn!("input failure: {err:?}")
+                    log::warn!("inport failure: {err:?}")
                 }
 
+                self.instructions = instruction_buffer;
                 self.dims = (max_loc + IVec2::ONE).as_uvec2();
             }
 
