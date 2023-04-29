@@ -1,4 +1,5 @@
 use if_chain::if_chain;
+use itertools::Itertools;
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
 use std::{
@@ -251,7 +252,6 @@ impl<'a> Matrix<'a> {
     }
 
     pub fn step(&mut self) {
-        // TODO check errors and cleanup output travelers
         if self.collision_free() {
             self.step_travelers();
         } else {
@@ -337,11 +337,20 @@ impl<'a> Matrix<'a> {
                             .entry(traveler.location)
                             .and_modify(|q| q.push_back(traveler.value.clone()))
                             .or_insert_with(|| vec![traveler.value.clone()].into());
+                        smallvec![]
                     } else {
                         traveler.direction = instruction.direction;
-                        self.waiting_for_queue.push((traveler, Registers::ONE));
+                        if let Some(queued) = self
+                            .queues
+                            .get_mut(&traveler.location)
+                            .and_then(|q| q.pop_front())
+                        {
+                            smallvec![traveler.mul(&queued).step()]
+                        } else {
+                            self.waiting_for_queue.push((traveler, Registers::ONE));
+                            smallvec![]
+                        }
                     }
-                    smallvec![]
                 }
                 L3XCommand::Annihilate => {
                     smallvec![traveler.value(Registers::ONE).direct(instruction.direction)]
@@ -350,19 +359,22 @@ impl<'a> Matrix<'a> {
             Ok(out)
         })?;
 
-        self.waiting_for_queue
+        let dequeued_travelers = self
+            .waiting_for_queue
             .e_drain_where(|(traveler, u)| {
-                self.queues
-                    .get_mut(&traveler.location)
-                    .and_then(|q| q.pop_front())
-                    .map(|register| *u = register)
-                    .is_some()
+                let queued_traveler = self
+                    .travelers
+                    .iter()
+                    .position(|e| e.location == traveler.location)
+                    .map(|ix| self.travelers.swap_remove(ix).value);
+
+                queued_traveler.map(|register| *u = register).is_some()
             })
-            .for_each(|(traveler, multiplier)| {
-                self.travelers.push(traveler.mul(&multiplier).step())
-            });
+            .map(|(traveler, multiplier)| traveler.mul(&multiplier).step())
+            .collect_vec();
+
+        self.travelers.extend(dequeued_travelers);
 
         Ok(())
     }
 }
-
