@@ -37,7 +37,6 @@ async fn main() {
     let mut offset = Vec2 { x: 100.0, y: 100.0 };
     let mut scale = 1.0;
 
-    let mut rmb_position = None;
     let mut input_driver = InputDriver::default();
     loop {
         clear_background(BEIGE);
@@ -49,21 +48,8 @@ async fn main() {
         }
 
         // panning
-        if is_mouse_button_released(MouseButton::Right) {
-            rmb_position = None;
-        }
         if is_mouse_button_down(MouseButton::Right) {
-            if let Some((pos_x, pos_y)) = rmb_position {
-                let (new_x, new_y) = mouse_position();
-                let difference_x = new_x - pos_x;
-                let difference_y = new_y - pos_y;
-
-                offset.x += difference_x;
-                offset.y += difference_y;
-                rmb_position = Some(mouse_position());
-            } else {
-                rmb_position = Some(mouse_position());
-            }
+            offset += input_driver.mouse_delta();
         }
 
         if input_driver.lmb_doubleclick() {

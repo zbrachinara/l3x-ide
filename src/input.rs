@@ -50,6 +50,7 @@ impl MouseButtonDriver {
 pub struct InputDriver {
     subscribe_id: usize,
     mouse_buttons: HashMap<MouseButton, MouseButtonDriver>,
+    mouse_position: [Vec2; 2],
 }
 
 impl Default for InputDriver {
@@ -60,6 +61,7 @@ impl Default for InputDriver {
                 .into_iter()
                 .map(|button| (button, MouseButtonDriver::default()))
                 .collect(),
+            mouse_position: [Vec2::ZERO; 2],
         }
     }
 }
@@ -96,7 +98,10 @@ impl EventHandler for InputDriver {
 impl InputDriver {
     pub fn update(&mut self) {
         macroquad::input::utils::repeat_all_miniquad_input(self, self.subscribe_id);
-        self.mouse_buttons.values_mut().for_each(|b| b.update())
+        self.mouse_buttons.values_mut().for_each(|b| b.update());
+
+        self.mouse_position.rotate_left(1);
+        self.mouse_position[1] = mouse_position().into();
     }
 }
 
@@ -116,5 +121,9 @@ impl InputDriver {
 
     pub fn lmb_hold(&self) -> Option<(Vec2, f32)> {
         self.mouse_buttons[&MouseButton::Left].held()
+    }
+
+    pub fn mouse_delta(&self) -> Vec2{
+        self.mouse_position[1] - self.mouse_position[0]
     }
 }
