@@ -1,6 +1,6 @@
 {
     "liveServer.settings.root": "./www",
+    "rust-analyzer.showUnlinkedFileNotification": false,
     // "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
     // "rust-analyzer.cargo.noDefaultFeatures": true,
-    // "rust-analyzer.showUnlinkedFileNotification": false
 }

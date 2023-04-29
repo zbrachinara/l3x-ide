@@ -29,7 +29,7 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --target wasm32-unknown-unknown --profile wasm-release
+          cargo build --target wasm32-unknown-unknown --profile wasm-release --no-default-features
 
       - name: Prepare package
         run: |
