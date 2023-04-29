@@ -39,7 +39,6 @@ async fn main() {
 
     let mut rmb_position = None;
     let mut input_driver = InputDriver::default();
-    let mut time = 0;
     loop {
         clear_background(BEIGE);
 
@@ -91,13 +90,6 @@ async fn main() {
 
         matrix.draw(offset, CELL_SIZE, scale);
         egui_macroquad::draw();
-        time += 1;
-        if time > matrix.period {
-            time %= matrix.period;
-            if matrix.stepping {
-                matrix.step();
-            }
-        }
         next_frame().await
     }
 }

@@ -59,8 +59,10 @@ pub struct Matrix<'a> {
     dims: UVec2,
     selecting: Option<IVec2>,
     selecting_text: String,
-    pub period: u16,
-    pub stepping: bool,
+    period: usize,
+    stepping: bool,
+
+    time: usize,
 
     queues: HashMap<IVec2, VecDeque<Registers>>,
     waiting_for_queue: Vec<(Traveler, Registers)>,
@@ -108,12 +110,20 @@ impl<'a> Default for Matrix<'a> {
             #[cfg(not(target_arch = "wasm32"))]
             future_states: Default::default(),
             wasm_ignore_lifetime: Default::default(),
+            time: 0,
         }
     }
 }
 
 impl<'a> Matrix<'a> {
     pub fn update(&mut self) {
+        self.time += 1;
+        if self.time > self.period {
+            self.time %= self.period;
+            if self.stepping {
+                self.step();
+            }
+        }
         #[cfg(not(target_arch = "wasm32"))]
         {
             self.future_states.task_executor.try_tick();
