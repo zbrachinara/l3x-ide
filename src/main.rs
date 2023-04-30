@@ -13,14 +13,6 @@ mod matrix;
 mod swapbuffer;
 mod traveler;
 
-pub fn mouse() -> Vec2 {
-    let (mouse_x, mouse_y) = mouse_position();
-    Vec2 {
-        x: mouse_x,
-        y: mouse_y,
-    }
-}
-
 #[macroquad::main("L3X IDE")]
 async fn main() {
     if let Err(e) = simple_logger::SimpleLogger::default()
@@ -42,7 +34,7 @@ async fn main() {
         clear_background(BEIGE);
 
         input_driver.update();
-        let logical = (mouse() - offset * scale) / (CELL_SIZE * scale);
+        let logical = (Vec2::from(mouse_position()) - offset * scale) / (CELL_SIZE * scale);
         if input_driver.lmb_hold().is_some() {
             matrix.set_dims((logical + Vec2::splat(0.5)).as_ivec2())
         }
