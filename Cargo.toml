@@ -8,10 +8,12 @@ inherits = "release"
 opt-level = "z"
 lto = "fat"
 
-[features]
-default = ["async-executor", "futures-lite", "rfd"]
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[target."cfg(not(target_arch = \"wasm32\"))".dependencies]
+rfd = "0.11"
+async-executor = "1.5"
+futures-lite = "1.13"
 
 [dependencies]
 macroquad = "0.3"
@@ -34,7 +36,3 @@ smallvec = "1.10"
 bitflags = "2.2"
 csv = "1.1"
 ndarray = "0.15"
-
-rfd = {version = "0.11", optional = true}
-async-executor = {version = "1.5", optional = true}
-futures-lite = {version = "1.13", optional = true}
