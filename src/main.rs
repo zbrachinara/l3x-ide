@@ -12,6 +12,8 @@ mod l3x;
 mod matrix;
 mod swapbuffer;
 mod traveler;
+#[cfg(target_arch = "wasm32")]
+mod wasm_log;
 
 const CELL_SIZE: f32 = 60.0;
 const SCALE_RATE: f32 = 0.02;
@@ -46,6 +48,18 @@ async fn main() {
             println!("simple-logger failed with error {e}")
         }
     }
+    #[cfg(target_arch = "wasm32")]
+    {
+        #[allow(clippy::redundant_pattern_matching)]
+        if let Err(_) = wasm_log::WasmLogger::default()
+            .with_level(log::LevelFilter::Debug)
+            .init()
+        {
+            // TODO not sure if it's possible to communicate to the user here, maybe use an alert or something?
+        }
+    }
+
+    log::debug!("If you see this message, logging is enabled (Debug level)");
 
     let mut state = Model::default();
 
