@@ -36,12 +36,15 @@ impl<'a> Default for Model<'a> {
 
 #[macroquad::main("L3X IDE")]
 async fn main() {
-    if let Err(e) = simple_logger::SimpleLogger::default()
-        .with_level(log::LevelFilter::Debug)
-        .init()
+    #[cfg(not(target_arch = "wasm32"))]
     {
-        println!("Failed to init logging, you are on your own");
-        println!("simple-logger failed with error {e}")
+        if let Err(e) = simple_logger::SimpleLogger::default()
+            .with_level(log::LevelFilter::Debug)
+            .init()
+        {
+            println!("Failed to init logging, you are on your own");
+            println!("simple-logger failed with error {e}")
+        }
     }
 
     let mut state = Model::default();
@@ -53,7 +56,9 @@ async fn main() {
         let logical =
             (Vec2::from(mouse_position()) - state.offset * state.scale) / (CELL_SIZE * state.scale);
         if state.input_driver.lmb_hold().is_some() {
-            state.matrix.set_dims((logical + Vec2::splat(0.5)).as_ivec2())
+            state
+                .matrix
+                .set_dims((logical + Vec2::splat(0.5)).as_ivec2())
         }
 
         // panning
