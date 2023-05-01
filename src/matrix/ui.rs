@@ -210,14 +210,17 @@ impl<'a> Matrix<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    fn ui_import(&mut self, ui: &mut Ui) {}
+    fn ui_import(&mut self, ui: &mut Ui) {
+        ui.label("Import/export is broken on web right now, sorry :/");
+        ui.label("(also please don't press ctrl+v if you're working, this will crash)");
+    }
 
     pub fn config_ui(&mut self, ui: &mut Ui) {
         ui.heading("Simulation");
         self.ui_simulation_tools(ui);
 
         ui.separator();
-        ui.collapsing("Import tools", |ui| self.ui_import(ui));
+        ui.collapsing_open("Import tools", |ui| self.ui_import(ui));
 
         ui.separator();
         ui.collapsing_open("Single input", |ui| self.ui_edit_single_input(ui));
