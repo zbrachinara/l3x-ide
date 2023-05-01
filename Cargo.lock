@@ -771,7 +771,7 @@ dependencies = [
 
 [[package]]
 name = "l3x-ide"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-executor",
  "bitflags 2.2.1",
