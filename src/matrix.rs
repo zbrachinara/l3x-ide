@@ -73,7 +73,7 @@ pub struct Matrix<'a> {
     focus_editing: u8,
     single_input_next_frame_focus: bool,
     single_input_text: String,
-    single_input: Option<Registers>,
+    single_input: Registers,
     stream_input_text: Option<String>,
     stream_input: Vec<Registers>,
 
@@ -103,7 +103,7 @@ impl<'a> Default for Matrix<'a> {
             focus_editing: 0,
             single_input_next_frame_focus: false,
             single_input_text: Default::default(),
-            single_input: Default::default(),
+            single_input: Registers::ONE,
             stream_input_text: Default::default(),
             stream_input: Default::default(),
             simulating: false,
@@ -237,7 +237,7 @@ impl<'a> Matrix<'a> {
 
     fn init_simulation_inner(&mut self) -> Option<()> {
         self.travelers.push(Traveler {
-            value: self.single_input.clone()?,
+            value: self.single_input.clone(),
             location: IVec2::ZERO,
             direction: Direction::Down,
         });

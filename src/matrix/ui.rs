@@ -87,16 +87,14 @@ impl<'a> Matrix<'a> {
 
     fn ui_edit_single_input(&mut self, ui: &mut Ui) {
         ui.set_enabled(!self.simulating);
-        if let Some(ref value) = self.single_input {
-            ui.label(format!("Current value: {}", value));
-        }
+        ui.label(format!("Current value: {}", self.single_input));
         if ui
             .text_edit_singleline(&mut self.single_input_text)
             .lost_focus()
             && ui.input(|i| i.key_pressed(egui::Key::Enter))
         {
             if let Ok(registers) = self.single_input_text.parse() {
-                self.single_input = Some(registers);
+                self.single_input = registers;
             }
         }
     }
