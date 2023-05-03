@@ -102,6 +102,7 @@ impl Registers {
             itertools::EitherOrBoth::Left(&val) => Some(val),
             itertools::EitherOrBoth::Right(_) => None,
         })
+        .filter(|u| u.map(|(_, pow)| pow != 0).unwrap_or(true))
         .collect::<Option<Vec<_>>>()?;
 
         Some(Self(result))
