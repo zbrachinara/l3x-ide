@@ -87,9 +87,9 @@ async fn main() {
             state.matrix.stop_edit();
         }
 
-        state.scale += mouse_wheel().1 * SCALE_RATE;
-
+        let mut egui_hovered = false;
         egui_macroquad::ui(|ctx| {
+            egui_hovered = ctx.is_pointer_over_area();
             egui::Window::new("Menu")
                 .title_bar(false)
                 .anchor(Align2::RIGHT_TOP, (-50.0, 50.0))
@@ -99,6 +99,10 @@ async fn main() {
                     })
                 });
         });
+
+        if !egui_hovered {
+            state.scale += mouse_wheel().1 * SCALE_RATE;
+        }
 
         state.matrix.update();
 
