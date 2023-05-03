@@ -19,6 +19,8 @@ use crate::{
     traveler::{Registers, Traveler},
 };
 
+use self::ui::UiSingleInput;
+
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum MatrixMode {
     #[default]
@@ -71,10 +73,9 @@ pub struct Matrix<'a> {
     output_stream: Vec<Registers>,
 
     focus_editing: u8,
+
     single_input_next_frame_focus: bool,
-    single_input_text: String,
-    single_input_error_text: Option<String>,
-    single_input: Registers,
+    single_input: UiSingleInput,
     stream_input_text: Option<String>,
     stream_input: Vec<Registers>,
 
@@ -103,9 +104,7 @@ impl<'a> Default for Matrix<'a> {
             output_stream: Default::default(),
             focus_editing: 0,
             single_input_next_frame_focus: false,
-            single_input_text: Default::default(),
-            single_input: Registers::ONE,
-            single_input_error_text: Default::default(),
+            single_input: Default::default(),
             stream_input_text: Default::default(),
             stream_input: Default::default(),
             simulating: false,
@@ -239,7 +238,7 @@ impl<'a> Matrix<'a> {
 
     fn init_simulation_inner(&mut self) -> Option<()> {
         self.travelers.push(Traveler {
-            value: self.single_input.clone(),
+            value: self.single_input.value().clone(),
             location: IVec2::ZERO,
             direction: Direction::Down,
         });

@@ -1,6 +1,6 @@
 use crate::{
     l3x::{L3XCommand, L3X},
-    traveler::Traveler,
+    traveler::{Registers, Traveler},
 };
 use egui::{CollapsingHeader, CollapsingResponse, Ui, WidgetText};
 use macroquad::prelude::*;
@@ -25,6 +25,37 @@ impl EguiExt for Ui {
         CollapsingHeader::new(heading)
             .default_open(true)
             .show(self, add_contents)
+    }
+}
+
+#[derive(Default)]
+pub struct UiSingleInput {
+    text: String,
+    error_text: Option<String>,
+    value: Registers,
+}
+
+impl UiSingleInput {
+    fn ui(&mut self, ui: &mut Ui, simulating: bool) {
+        ui.set_enabled(!simulating);
+        ui.label(format!("Current value: {}", self.value));
+        let text_edit = ui.text_edit_singleline(&mut self.text);
+        if let Some(ref err) = self.error_text {
+            ui.label(WidgetText::from(err).color(egui::Color32::RED));
+        }
+        if text_edit.has_focus() && ui.input(|i| !i.keys_down.is_empty()) {
+            self.error_text = None;
+        }
+        if text_edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+            match self.text.parse() {
+                Ok(registers) => self.value = registers,
+                Err(e) => self.error_text = Some(e.to_string()),
+            }
+        }
+    }
+
+    pub fn value(&self) -> &Registers {
+        &self.value
     }
 }
 
@@ -83,25 +114,6 @@ impl<'a> Matrix<'a> {
             ui.label("Simulation rate (in frame time)");
             ui.add(egui::widgets::Slider::new(&mut self.period, 5..=120))
         });
-    }
-
-    fn ui_edit_single_input(&mut self, ui: &mut Ui) {
-        ui.set_enabled(!self.simulating);
-        ui.label(format!("Current value: {}", self.single_input));
-        let text_edit = ui.text_edit_singleline(&mut self.single_input_text);
-        if let Some(ref err) = self.single_input_error_text {
-            ui.label(WidgetText::from(err).color(egui::Color32::RED));
-        }
-        if text_edit.has_focus() && ui.input(|i| !i.keys_down.is_empty()) {
-            self.single_input_error_text = None;
-
-        }
-        if text_edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-            match self.single_input_text.parse() {
-                Ok(registers) => self.single_input = registers,
-                Err(e) => self.single_input_error_text = Some(e.to_string()),
-            }
-        }
     }
 
     fn ui_edit_multi_input(&mut self, ui: &mut Ui) {
@@ -226,7 +238,9 @@ impl<'a> Matrix<'a> {
         ui.collapsing_open("Import tools", |ui| self.ui_import(ui));
 
         ui.separator();
-        ui.collapsing_open("Single input", |ui| self.ui_edit_single_input(ui));
+        ui.collapsing_open("Single input", |ui| {
+            self.single_input.ui(ui, self.simulating)
+        });
 
         if self.mode == MatrixMode::L3X {
             ui.separator();

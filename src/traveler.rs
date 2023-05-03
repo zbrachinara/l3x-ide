@@ -23,6 +23,12 @@ impl Registers {
     pub const ONE: Self = Registers(vec![]);
 }
 
+impl Default for Registers {
+    fn default() -> Self {
+        Self::ONE
+    }
+}
+
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum RegisterParseError {
     #[error("A register set cannot have a value of zero. Perhaps you meant p^0, or 1.")]
