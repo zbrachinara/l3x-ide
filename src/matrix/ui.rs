@@ -88,13 +88,18 @@ impl<'a> Matrix<'a> {
     fn ui_edit_single_input(&mut self, ui: &mut Ui) {
         ui.set_enabled(!self.simulating);
         ui.label(format!("Current value: {}", self.single_input));
-        if ui
-            .text_edit_singleline(&mut self.single_input_text)
-            .lost_focus()
-            && ui.input(|i| i.key_pressed(egui::Key::Enter))
-        {
-            if let Ok(registers) = self.single_input_text.parse() {
-                self.single_input = registers;
+        let text_edit = ui.text_edit_singleline(&mut self.single_input_text);
+        if let Some(ref err) = self.single_input_error_text {
+            ui.label(WidgetText::from(err).color(egui::Color32::RED));
+        }
+        if text_edit.has_focus() && ui.input(|i| !i.keys_down.is_empty()) {
+            self.single_input_error_text = None;
+
+        }
+        if text_edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+            match self.single_input_text.parse() {
+                Ok(registers) => self.single_input = registers,
+                Err(e) => self.single_input_error_text = Some(e.to_string()),
             }
         }
     }
