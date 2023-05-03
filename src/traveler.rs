@@ -5,8 +5,9 @@ use std::{
     str::FromStr,
 };
 
-use itertools::merge_join_by;
+use itertools::{merge_join_by, Itertools};
 use macroquad::prelude::*;
+use num_bigint::BigUint;
 use prime_factorization::Factorization;
 
 use crate::l3x::Direction;
@@ -15,10 +16,37 @@ use crate::l3x::Direction;
 /// vector in this struct is empty. Otherwise, it is a list of (p, pow), where p is a prime,
 /// representing `p_0 ^ pow_0 * p_1 ^ pow_1 * ... * p_n ^ pow_n`
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct Registers(pub Vec<(u64, u32)>);
+pub struct Registers(
+    #[cfg(test)] pub Vec<(u64, u32)>,
+    #[cfg(not(test))] Vec<(u64, u32)>,
+);
 
 impl Registers {
     pub const ONE: Self = Registers(vec![]);
+}
+
+impl TryFrom<BigUint> for Registers {
+    type Error = ();
+
+    fn try_from(value: BigUint) -> Result<Self, Self::Error> {
+        if value == BigUint::from(0u32) {
+            Err(())
+        } else if value == BigUint::from(1u32) {
+            Ok(Self(vec![]))
+        } else {
+            let factorization = num_prime::nt_funcs::factorize(value); // TODO look into factorization alternatives
+            let res = factorization
+                .into_iter() // btree into_iter guarantees order by key
+                .map(|(factor, pow)| {
+                    (
+                        factor.to_u64_digits().into_iter().exactly_one().unwrap(),
+                        pow as u32,
+                    )
+                })
+                .collect_vec();
+            Ok(Self(res))
+        }
+    }
 }
 
 impl TryFrom<u64> for Registers {
@@ -36,7 +64,7 @@ impl TryFrom<u64> for Registers {
                 state.entry(e).and_modify(|v| *v += 1).or_insert(1);
             }
             let mut res: Vec<_> = state.into_iter().collect();
-            res.sort_by(|a,b|a.0.cmp(&b.0));
+            res.sort_by(|a, b| a.0.cmp(&b.0));
             Ok(Self(res))
         }
     }
@@ -150,7 +178,10 @@ mod test_registers {
 
     #[test]
     fn create() {
-        assert_eq!(Registers::from_str("30"),Ok(Registers(vec![(2,1),(3,1),(5,1)])))
+        assert_eq!(
+            Registers::from_str("30"),
+            Ok(Registers(vec![(2, 1), (3, 1), (5, 1)]))
+        )
     }
     #[test]
     fn multiplication() {
@@ -173,13 +204,17 @@ mod test_registers {
 
     #[test]
     fn division() {
-        let r1 = Registers(vec![(2, 1),(5,1),(3,1)]);
+        let r1 = Registers(vec![(2, 1), (3, 1), (5, 1)]);
         let r2 = Registers(vec![(3, 1)]);
-        println!("{}", r1.try_div(&r2).unwrap());
         assert_eq!(
             r1.try_div(&r2),
-            Some(Registers(vec![(2,1),(5,1)])),
-            "Coprime numbers should fail to divide"
+            Some(Registers(vec![(2, 1), (5, 1)])),
+            "Factor should be allowed to divide a number"
+        );
+        assert_eq!(
+            r2.try_div(&r1),
+            None,
+            "a number cannot divide a lesser number"
         );
 
         let r1 = Registers(vec![(2, 9), (3, 4), (5, 7), (7, 4)]);
