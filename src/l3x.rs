@@ -99,7 +99,7 @@ impl TryFrom<&str> for MaybeL3X {
         let value = value.trim();
 
         if value.is_empty() {
-            return Ok(Self::None)
+            return Ok(Self::None);
         }
 
         let direction_char = value.chars().last().ok_or(L3XParseError::WrongLength)?;

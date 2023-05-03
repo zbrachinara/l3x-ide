@@ -123,7 +123,7 @@ impl InputDriver {
         self.mouse_buttons[&MouseButton::Left].held()
     }
 
-    pub fn mouse_delta(&self) -> Vec2{
+    pub fn mouse_delta(&self) -> Vec2 {
         self.mouse_position[1] - self.mouse_position[0]
     }
 }
