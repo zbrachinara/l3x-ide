@@ -59,6 +59,47 @@ impl UiSingleInput {
     }
 }
 
+#[derive(Default)]
+pub struct UiStreamInput {
+    next_frame_focus: bool,
+    input_text: Option<String>,
+    value: Vec<Registers>,
+}
+
+impl UiStreamInput {
+    fn ui(&mut self, ui: &mut Ui, simulating: bool) {
+        ui.set_enabled(!simulating);
+        self.value
+            .e_drain_where(|registers| ui.button(registers.to_string()).clicked())
+            .for_each(drop);
+        if let Some(ref mut text) = self.input_text {
+            let textedit = ui.text_edit_singleline(text);
+            if self.next_frame_focus {
+                textedit.request_focus();
+                self.next_frame_focus = false;
+            }
+            if textedit.lost_focus() {
+                if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    if let Ok(registers) = text.parse() {
+                        self.value.push(registers);
+                    }
+                    text.clear();
+                    self.next_frame_focus = true;
+                } else {
+                    self.input_text = None;
+                }
+            }
+        } else if ui.button("Add to stream").clicked() {
+            self.input_text = Some(String::new());
+            self.next_frame_focus = true;
+        }
+    }
+
+    pub fn value(&self) -> &Vec<Registers> {
+        &self.value
+    }
+}
+
 impl<'a> Matrix<'a> {
     fn ui_simulation_tools(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
@@ -114,34 +155,6 @@ impl<'a> Matrix<'a> {
             ui.label("Simulation rate (in frame time)");
             ui.add(egui::widgets::Slider::new(&mut self.period, 5..=120))
         });
-    }
-
-    fn ui_edit_multi_input(&mut self, ui: &mut Ui) {
-        ui.set_enabled(!self.simulating);
-        self.stream_input
-            .e_drain_where(|registers| ui.button(registers.to_string()).clicked())
-            .for_each(drop);
-        if let Some(ref mut text) = self.stream_input_text {
-            let textedit = ui.text_edit_singleline(text);
-            if self.single_input_next_frame_focus {
-                textedit.request_focus();
-                self.single_input_next_frame_focus = false;
-            }
-            if textedit.lost_focus() {
-                if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                    if let Ok(registers) = text.parse() {
-                        self.stream_input.push(registers);
-                    }
-                    text.clear();
-                    self.single_input_next_frame_focus = true;
-                } else {
-                    self.stream_input_text = None;
-                }
-            }
-        } else if ui.button("Add to stream").clicked() {
-            self.stream_input_text = Some(String::new());
-            self.single_input_next_frame_focus = true;
-        }
     }
 
     fn ui_cell_value_view(&mut self, ui: &mut Ui, location: IVec2) {
@@ -244,7 +257,9 @@ impl<'a> Matrix<'a> {
 
         if self.mode == MatrixMode::L3X {
             ui.separator();
-            ui.collapsing_open("Multi input (L3X)", |ui| self.ui_edit_multi_input(ui));
+            ui.collapsing_open("Multi input (L3X)", |ui| {
+                self.stream_input.ui(ui, self.simulating)
+            });
         }
 
         if let Some(location) = self.selecting {

@@ -19,7 +19,7 @@ use crate::{
     traveler::{Registers, Traveler},
 };
 
-use self::ui::UiSingleInput;
+use self::ui::{UiSingleInput, UiStreamInput};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum MatrixMode {
@@ -74,10 +74,11 @@ pub struct Matrix<'a> {
 
     focus_editing: u8,
 
-    single_input_next_frame_focus: bool,
     single_input: UiSingleInput,
-    stream_input_text: Option<String>,
-    stream_input: Vec<Registers>,
+    // stream_input_next_frame_focus: bool,
+    // stream_input_text: Option<String>,
+    // stream_input: Vec<Registers>,
+    stream_input: UiStreamInput,
 
     simulating: bool,
 
@@ -103,9 +104,7 @@ impl<'a> Default for Matrix<'a> {
             output: Default::default(),
             output_stream: Default::default(),
             focus_editing: 0,
-            single_input_next_frame_focus: false,
             single_input: Default::default(),
-            stream_input_text: Default::default(),
             stream_input: Default::default(),
             simulating: false,
             #[cfg(not(target_arch = "wasm32"))]
@@ -244,7 +243,7 @@ impl<'a> Matrix<'a> {
         });
 
         self.queues
-            .insert(ivec2(1, 0), self.stream_input.clone().into());
+            .insert(ivec2(1, 0), self.stream_input.value().clone().into());
 
         Some(())
     }
