@@ -6,7 +6,7 @@ use std::{
 
 use itertools::{merge_join_by, Itertools};
 use macroquad::prelude::*;
-use num_bigint::BigUint;
+use num_bigint::{BigUint, ParseBigIntError};
 
 use crate::l3x::Direction;
 
@@ -23,12 +23,24 @@ impl Registers {
     pub const ONE: Self = Registers(vec![]);
 }
 
+#[derive(thiserror::Error, Debug, PartialEq)]
+pub enum RegisterParseError {
+    #[error("A register set cannot have a value of zero. Perhaps you meant p^0, or 1.")]
+    Zero,
+    #[error("The given number has prime factors which do not fit in a u64")]
+    FactorTooLarge,
+    #[error("The given number has a power which does not fit in a u32")]
+    PowTooLarge,
+    #[error("Failed to parse bigint with error: {0}")]
+    BigInt(#[from] ParseBigIntError),
+}
+
 impl TryFrom<BigUint> for Registers {
-    type Error = ();
+    type Error = RegisterParseError;
 
     fn try_from(value: BigUint) -> Result<Self, Self::Error> {
         if value == BigUint::from(0u32) {
-            Err(())
+            Err(Self::Error::Zero)
         } else if value == BigUint::from(1u32) {
             Ok(Self(vec![]))
         } else {
@@ -36,21 +48,30 @@ impl TryFrom<BigUint> for Registers {
             factorization
                 .into_iter() // btree into_iter guarantees order by key
                 .map(|(factor, pow)| {
-                    factor
+                    let factor = factor
                         .to_u64_digits()
                         .into_iter()
                         .exactly_one()
-                        .map(|factor_u64| (factor_u64, pow as u32))
+                        .map_err(|e| match e.count() {
+                            x if x > 1 => Self::Error::FactorTooLarge,
+                            _ => panic!("either itertools or bigint just failed"),
+                        })?;
+
+                    let pow = if pow <= u32::MAX as usize {
+                        pow as u32
+                    } else {
+                        return Err(Self::Error::PowTooLarge);
+                    };
+                    Ok((factor, pow))
                 })
-                .collect::<Result<Vec<_>, _>>()
+                .try_collect::<_, Vec<_>, _>()
                 .map(Self)
-                .map_err(|_| ())
         }
     }
 }
 
 impl TryFrom<u64> for Registers {
-    type Error = ();
+    type Error = RegisterParseError;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         Registers::try_from(BigUint::from(value))
@@ -58,11 +79,11 @@ impl TryFrom<u64> for Registers {
 }
 
 impl FromStr for Registers {
-    type Err = ();
+    type Err = RegisterParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.parse::<BigUint>()
-            .map_err(|_| ())
+            .map_err(Self::Err::BigInt)
             .and_then(Registers::try_from)
     }
 }
@@ -152,7 +173,7 @@ mod test_registers {
     use super::*;
     #[test]
     fn zero_and_one() {
-        assert_eq!(Registers::try_from(0), Err(()));
+        assert_eq!(Registers::try_from(0), Err(RegisterParseError::Zero));
         assert_eq!(Registers::try_from(1), Ok(Registers(vec![])));
     }
 
