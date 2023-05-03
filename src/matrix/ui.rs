@@ -114,6 +114,7 @@ impl Matrix {
                 if ui
                     .button("▶")
                     .on_hover_text("play (step automatically)")
+                    .on_disabled_hover_text("play (step automatically")
                     .clicked()
                 {
                     self.stepping = true;
@@ -121,16 +122,23 @@ impl Matrix {
                 if ui
                     .button("⏸")
                     .on_hover_text("pause (stop autostepping)")
+                    .on_disabled_hover_text("pause (stop autostepping")
                     .clicked()
                 {
                     self.stepping = false;
                 };
-                if ui.button("⏭").on_hover_text("step by one cycle").clicked() {
+                if ui
+                    .button("⏭")
+                    .on_hover_text("step by one cycle")
+                    .on_disabled_hover_text("step by one cycle")
+                    .clicked()
+                {
                     self.step()
                 }
                 if ui
                     .button("⏹")
                     .on_hover_text("exit the simulation")
+                    .on_disabled_hover_text("exit the simulation")
                     .clicked()
                 {
                     self.cleanup_simulation();
