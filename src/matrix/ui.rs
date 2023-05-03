@@ -100,7 +100,7 @@ impl UiStreamInput {
     }
 }
 
-impl<'a> Matrix<'a> {
+impl Matrix {
     fn ui_simulation_tools(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.scope(|ui| {
@@ -225,12 +225,12 @@ impl<'a> Matrix<'a> {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn ui_import(&mut self, ui: &mut Ui) {
+    fn ui_import(&mut self, ui: &mut Ui, executor: &mut async_executor::LocalExecutor) {
         ui.horizontal(|ui| {
             ui.scope(|ui| {
                 ui.set_enabled(!self.simulating);
                 if ui.button("Import").clicked() {
-                    self.start_file_import();
+                    self.start_file_import(executor);
                 }
             });
             ui.button("Export");
@@ -243,12 +243,19 @@ impl<'a> Matrix<'a> {
         ui.label("(also please don't press ctrl+v if you're working, this will crash)");
     }
 
-    pub fn config_ui(&mut self, ui: &mut Ui) {
+    pub fn config_ui(
+        &mut self,
+        ui: &mut Ui,
+        #[cfg(not(target_arch = "wasm32"))] executor: &mut async_executor::LocalExecutor,
+    ) {
         ui.heading("Simulation");
         self.ui_simulation_tools(ui);
 
         ui.separator();
-        ui.collapsing_open("Import tools", |ui| self.ui_import(ui));
+        ui.collapsing_open("Import tools", |ui| {
+            #[cfg(not(target_arch = "wasm32"))]
+            self.ui_import(ui, executor)
+        });
 
         ui.separator();
         ui.collapsing_open("Single input", |ui| {

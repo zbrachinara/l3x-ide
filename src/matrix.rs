@@ -2,10 +2,7 @@ use if_chain::if_chain;
 use itertools::Itertools;
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
-use std::{
-    collections::{HashMap, HashSet, VecDeque},
-    marker::PhantomData,
-};
+use std::collections::{HashMap, HashSet, VecDeque};
 use vec_drain_where::VecDrainWhereExt;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -55,7 +52,7 @@ impl MatrixMode {
     }
 }
 
-pub struct Matrix<'a> {
+pub struct Matrix {
     mode: MatrixMode,
     instructions: HashMap<IVec2, L3X>,
     dims: UVec2,
@@ -75,20 +72,16 @@ pub struct Matrix<'a> {
     focus_editing: u8,
 
     single_input: UiSingleInput,
-    // stream_input_next_frame_focus: bool,
-    // stream_input_text: Option<String>,
-    // stream_input: Vec<Registers>,
     stream_input: UiStreamInput,
 
     simulating: bool,
 
     // rust async moments
     #[cfg(not(target_arch = "wasm32"))]
-    future_states: future_states::FutureStates<'a>,
-    wasm_ignore_lifetime: PhantomData<&'a ()>,
+    future_states: future_states::FutureStates,
 }
 
-impl<'a> Default for Matrix<'a> {
+impl Default for Matrix {
     fn default() -> Self {
         Self {
             mode: Default::default(),
@@ -109,13 +102,12 @@ impl<'a> Default for Matrix<'a> {
             simulating: false,
             #[cfg(not(target_arch = "wasm32"))]
             future_states: Default::default(),
-            wasm_ignore_lifetime: Default::default(),
             time: 0,
         }
     }
 }
 
-impl<'a> Matrix<'a> {
+impl Matrix {
     pub fn update(&mut self) {
         self.time += 1;
         if self.time > self.period {
@@ -126,7 +118,6 @@ impl<'a> Matrix<'a> {
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
-            self.future_states.task_executor.try_tick();
             self.try_open_file();
         }
     }

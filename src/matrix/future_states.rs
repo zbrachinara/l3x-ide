@@ -1,7 +1,6 @@
-use async_executor::{LocalExecutor, Task};
+use async_executor::Task;
 
 #[derive(Default)]
-pub struct FutureStates<'a> {
-    pub task_executor: LocalExecutor<'a>,
+pub struct FutureStates {
     pub read_file: Option<Task<Option<Vec<u8>>>>,
 }

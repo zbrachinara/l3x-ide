@@ -18,14 +18,14 @@ mod wasm_log;
 const CELL_SIZE: f32 = 60.0;
 const SCALE_RATE: f32 = 0.02;
 
-struct Model<'a> {
-    matrix: Matrix<'a>,
+struct Model {
+    matrix: Matrix,
     offset: Vec2,
     scale: f32,
     input_driver: InputDriver,
 }
 
-impl<'a> Default for Model<'a> {
+impl Default for Model {
     fn default() -> Self {
         Self {
             matrix: Default::default(),
@@ -61,6 +61,9 @@ async fn main() {
 
     log::debug!("If you see this message, logging is enabled (Debug level)");
 
+    #[cfg(not(target_arch = "wasm32"))]
+    let mut executor = async_executor::LocalExecutor::default();
+
     let mut state = Model::default();
 
     loop {
@@ -95,7 +98,15 @@ async fn main() {
                 .anchor(Align2::RIGHT_TOP, (-50.0, 50.0))
                 .show(ctx, |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
-                        state.matrix.config_ui(ui);
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            state.matrix.config_ui(ui);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            executor.try_tick();
+                            state.matrix.config_ui(ui, &mut executor);
+                        }
                     })
                 });
         });

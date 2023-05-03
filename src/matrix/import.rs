@@ -1,3 +1,4 @@
+use async_executor::LocalExecutor;
 use csv::ReaderBuilder;
 use macroquad::prelude::*;
 use ndarray_csv::Array2Reader;
@@ -8,11 +9,11 @@ use crate::l3x::{L3XParseError, MaybeL3X};
 use super::Matrix;
 
 #[cfg(not(target_arch = "wasm32"))]
-impl<'a> Matrix<'a> {
-    pub fn start_file_import(&mut self) {
+impl Matrix {
+    pub fn start_file_import(&mut self, executor: &mut LocalExecutor) {
         let states = &mut self.future_states;
         if states.read_file.is_none() {
-            states.read_file = Some(states.task_executor.spawn(async {
+            states.read_file = Some(executor.spawn(async {
                 let file = rfd::AsyncFileDialog::new().pick_file().await;
                 match file {
                     Some(fi) => Some(fi.read().await),
@@ -38,7 +39,7 @@ impl<'a> Matrix<'a> {
     }
 }
 
-impl<'a> Matrix<'a> {
+impl Matrix {
     fn import_data(&mut self, data: &[u8]) {
         let mut reader = ReaderBuilder::new().has_headers(false).from_reader(data);
         let Ok(array) = reader.deserialize_array2_dynamic::<String>() else {return};
