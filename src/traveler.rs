@@ -35,16 +35,18 @@ impl TryFrom<BigUint> for Registers {
             Ok(Self(vec![]))
         } else {
             let factorization = num_prime::nt_funcs::factorize(value); // TODO look into factorization alternatives
-            let res = factorization
+            factorization
                 .into_iter() // btree into_iter guarantees order by key
                 .map(|(factor, pow)| {
-                    (
-                        factor.to_u64_digits().into_iter().exactly_one().unwrap(),
-                        pow as u32,
-                    )
+                    factor
+                        .to_u64_digits()
+                        .into_iter()
+                        .exactly_one()
+                        .map(|factor_u64| (factor_u64, pow as u32))
                 })
-                .collect_vec();
-            Ok(Self(res))
+                .collect::<Result<Vec<_>, _>>()
+                .map(Self)
+                .map_err(|_| ())
         }
     }
 }
@@ -74,16 +76,21 @@ impl FromStr for Registers {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.parse::<u64>()
-            .map_err(|_| ())
-            .and_then(Registers::try_from)
-        // todo!()
+        if let Ok(int) = s.parse::<u64>() {
+            Registers::try_from(int)
+        } else if let Ok(bigint) = s.parse::<BigUint>() {
+            Registers::try_from(bigint)
+        } else {
+            Err(())
+        }
     }
 }
 
 impl Display for Registers {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let u64_repr = self.0.iter().fold(1, |st, &(base, pow)| st * base.pow(pow));
+        let u64_repr = self.0.iter().fold(BigUint::from(1u64), |st, &(base, pow)| {
+            st * BigUint::from(base).pow(pow)
+        });
         write!(f, "{u64_repr}")
     }
 }
