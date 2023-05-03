@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     fmt::Display,
     ops::{Mul, MulAssign},
     str::FromStr,
@@ -8,7 +7,6 @@ use std::{
 use itertools::{merge_join_by, Itertools};
 use macroquad::prelude::*;
 use num_bigint::BigUint;
-use prime_factorization::Factorization;
 
 use crate::l3x::Direction;
 
@@ -55,20 +53,7 @@ impl TryFrom<u64> for Registers {
     type Error = ();
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        if value == 0 {
-            Err(())
-        } else if value == 1 {
-            Ok(Self(vec![]))
-        } else {
-            let factorization = Factorization::run(value); // TODO look into factorization alternatives
-            let mut state = HashMap::new();
-            for &e in factorization.factors.iter() {
-                state.entry(e).and_modify(|v| *v += 1).or_insert(1);
-            }
-            let mut res: Vec<_> = state.into_iter().collect();
-            res.sort_by(|a, b| a.0.cmp(&b.0));
-            Ok(Self(res))
-        }
+        Registers::try_from(BigUint::from(value))
     }
 }
 
@@ -76,13 +61,9 @@ impl FromStr for Registers {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Ok(int) = s.parse::<u64>() {
-            Registers::try_from(int)
-        } else if let Ok(bigint) = s.parse::<BigUint>() {
-            Registers::try_from(bigint)
-        } else {
-            Err(())
-        }
+        s.parse::<BigUint>()
+            .map_err(|_| ())
+            .and_then(Registers::try_from)
     }
 }
 

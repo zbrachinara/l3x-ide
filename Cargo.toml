@@ -30,7 +30,6 @@ duplicate = "1.0"
 vec-drain-where = "1.0"
 if_chain = "1.0"
 
-prime_factorization = "1.0"
 num-bigint = "0.4"
 num-prime = "0.4"
 ndarray-csv = "0.5"
