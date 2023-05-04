@@ -12,7 +12,8 @@ use crate::l3x::Direction;
 
 /// Represents the value of a traveler or a cell. If the value of the register is 1, then the
 /// vector in this struct is empty. Otherwise, it is a list of (p, pow), where p is a prime,
-/// representing `p_0 ^ pow_0 * p_1 ^ pow_1 * ... * p_n ^ pow_n`
+/// representing `p_0 ^ pow_0 * p_1 ^ pow_1 * ... * p_n ^ pow_n`, where p_0, p_1, ... p_n are in
+/// ascending order.
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Registers(pub Vec<(u64, u32)>);
 
