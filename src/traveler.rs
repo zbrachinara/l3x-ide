@@ -14,10 +14,7 @@ use crate::l3x::Direction;
 /// vector in this struct is empty. Otherwise, it is a list of (p, pow), where p is a prime,
 /// representing `p_0 ^ pow_0 * p_1 ^ pow_1 * ... * p_n ^ pow_n`
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct Registers(
-    #[cfg(test)] pub Vec<(u64, u32)>,
-    #[cfg(not(test))] Vec<(u64, u32)>,
-);
+pub struct Registers(pub Vec<(u64, u32)>);
 
 impl Registers {
     pub const ONE: Self = Registers(vec![]);
