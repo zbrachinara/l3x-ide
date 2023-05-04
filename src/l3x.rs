@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
 
@@ -181,6 +183,27 @@ impl L3X {
                 Output::Major(self.direction.opposite()),
             ],
         }
+    }
+
+    pub fn draw(
+        &self,
+        matrix: &HashMap<IVec2, L3X>,
+        location: IVec2,
+        cell_size: f32,
+        offset: Vec2,
+        font_size: f32,
+        primary_color: Color,
+    ) {
+        let text_offset = vec2(0.05, 0.67) * cell_size;
+        let lower = (location.as_vec2() * cell_size) + offset;
+        // TODO represent cell contents graphically
+        draw_text(
+            &self.to_string(),
+            (lower + text_offset).x,
+            (lower + text_offset).y,
+            font_size,
+            primary_color,
+        )
     }
 }
 

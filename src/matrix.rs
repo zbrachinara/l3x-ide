@@ -12,8 +12,9 @@ mod ui;
 
 use crate::{
     l3x::{Direction, L3XCommand, L3X},
+    registers::Registers,
     swapbuffer::SwapBuffer,
-    traveler::Traveler, registers::Registers,
+    traveler::Traveler,
 };
 
 use self::ui::{UiSingleInput, UiStreamInput};
@@ -167,12 +168,11 @@ impl Matrix {
 
         for (location, instruction) in &self.instructions {
             if location.cmplt(self.dims.as_ivec2()).all() {
-                let lower = (location.as_vec2() * cell_size) + offset;
-                // TODO represent cell contents graphically
-                draw_text(
-                    &instruction.to_string(),
-                    (lower + text_offset).x,
-                    (lower + text_offset).y,
+                instruction.draw(
+                    &self.instructions,
+                    *location,
+                    cell_size,
+                    offset,
                     font_size,
                     primary_color,
                 )
