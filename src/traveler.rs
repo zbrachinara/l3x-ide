@@ -18,6 +18,10 @@ pub struct Registers(pub Vec<(u64, u32)>);
 
 impl Registers {
     pub const ONE: Self = Registers(vec![]);
+
+    pub fn is_one(&self) -> bool {
+        self.0.is_empty()
+    }
 }
 
 impl Default for Registers {

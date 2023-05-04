@@ -1,4 +1,5 @@
 use macroquad::prelude::*;
+use smallvec::{smallvec, SmallVec};
 
 use crate::traveler::Registers;
 
@@ -156,6 +157,30 @@ impl ToString for L3X {
             Direction::Right => 'R',
         });
         out
+    }
+}
+
+pub enum Output {
+    Major(Direction),
+    Minor(Direction),
+}
+
+impl L3X {
+    pub fn outputs(&self) -> SmallVec<[Output; 2]> {
+        match self.command {
+            L3XCommand::Multiply(ref reg) if reg.is_one() => {
+                smallvec![Output::Major(self.direction)]
+            }
+            L3XCommand::Queue | L3XCommand::Annihilate => smallvec![Output::Major(self.direction)],
+            L3XCommand::Multiply(_) => smallvec![
+                Output::Major(self.direction),
+                Output::Minor(self.direction.opposite()),
+            ],
+            L3XCommand::Duplicate => smallvec![
+                Output::Major(self.direction),
+                Output::Major(self.direction.opposite()),
+            ],
+        }
     }
 }
 
