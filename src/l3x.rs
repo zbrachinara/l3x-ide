@@ -1,7 +1,7 @@
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
 
-use crate::traveler::Registers;
+use crate::registers::Registers;
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct L3X {

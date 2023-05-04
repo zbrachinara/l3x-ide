@@ -13,7 +13,7 @@ mod ui;
 use crate::{
     l3x::{Direction, L3XCommand, L3X},
     swapbuffer::SwapBuffer,
-    traveler::{Registers, Traveler},
+    traveler::Traveler, registers::Registers,
 };
 
 use self::ui::{UiSingleInput, UiStreamInput};

@@ -12,6 +12,7 @@ mod l3x;
 mod matrix;
 mod swapbuffer;
 mod traveler;
+mod registers;
 #[cfg(target_arch = "wasm32")]
 mod wasm_log;
 

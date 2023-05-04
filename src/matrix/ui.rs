@@ -1,6 +1,7 @@
 use crate::{
     l3x::{L3XCommand, L3X},
-    traveler::{Registers, Traveler},
+    registers::Registers,
+    traveler::Traveler,
 };
 use egui::{CollapsingHeader, CollapsingResponse, Ui, WidgetText};
 use macroquad::prelude::*;
