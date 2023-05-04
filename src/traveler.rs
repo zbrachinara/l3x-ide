@@ -22,6 +22,13 @@ impl Registers {
     pub fn is_one(&self) -> bool {
         self.0.is_empty()
     }
+
+    fn update_entry(&mut self, prime: u64, pow: u32) {
+        match self.0.binary_search_by_key(&prime, |&(prime, _)| prime) {
+            Ok(ix) => self.0[ix].1 = pow,
+            Err(ix) => self.0.insert(ix, (prime, pow)),
+        }
+    }
 }
 
 impl Default for Registers {
