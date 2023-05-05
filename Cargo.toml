@@ -29,6 +29,8 @@ thiserror = "1.0"
 duplicate = "1.0"
 vec-drain-where = "1.0"
 if_chain = "1.0"
+strum = "0.24"
+strum_macros = "0.24"
 
 num-bigint = "0.4"
 num-prime = "0.4"

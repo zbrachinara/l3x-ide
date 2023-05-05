@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
+use strum::IntoEnumIterator;
 
 use crate::registers::Registers;
 
@@ -12,10 +13,16 @@ pub struct L3X {
     pub command: L3XCommand,
 }
 
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, strum_macros::EnumIter)]
 #[rustfmt::skip]
 pub enum Direction {
     Up, Down, Left, Right,
+}
+
+impl DirectionIter {
+    fn with_offsets(self, from: IVec2) -> impl Iterator<Item = (Direction, IVec2)> {
+        self.map(move |item| (item, IVec2::from(item) + from))
+    }
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -69,6 +76,20 @@ impl From<Direction> for IVec2 {
             Direction::Down => ivec2(0, 1),
             Direction::Left => ivec2(-1, 0),
             Direction::Right => ivec2(1, 0),
+        }
+    }
+}
+
+impl From<Direction> for Mat2 {
+    /// Gives the transformation needed for a vector pointing downward to be rotated to point in the
+    /// given direction
+    fn from(value: Direction) -> Self {
+        let reflect = mat2(vec2(0., 1.), vec2(1., 0.));
+        match value {
+            Direction::Up => -Mat2::IDENTITY,
+            Direction::Down => Mat2::IDENTITY,
+            Direction::Left => -reflect,
+            Direction::Right => reflect,
         }
     }
 }
@@ -162,9 +183,22 @@ impl ToString for L3X {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum Output {
     Major(Direction),
     Minor(Direction),
+}
+
+impl Output {
+    fn direction(self) -> Direction {
+        match self {
+            Output::Major(di) | Output::Minor(di) => di,
+        }
+    }
+
+    fn is_major(self) -> bool {
+        matches!(self, Self::Major(_))
+    }
 }
 
 impl L3X {
@@ -188,6 +222,7 @@ impl L3X {
     pub fn draw(
         &self,
         matrix: &HashMap<IVec2, L3X>,
+        dims: UVec2,
         location: IVec2,
         cell_size: f32,
         offset: Vec2,
@@ -196,6 +231,27 @@ impl L3X {
     ) {
         let text_offset = vec2(0.05, 0.67) * cell_size;
         let lower = (location.as_vec2() * cell_size) + offset;
+
+        // collect input directions
+        let inputs = Direction::iter()
+            .with_offsets(location)
+            .filter_map(|(direction, location)| {
+                location
+                    .cmplt(dims.as_ivec2())
+                    .all()
+                    .then(|| {
+                        matrix
+                            .get(&location)
+                            .map(|l3x| l3x.direction == direction.opposite())
+                            .unwrap_or(false)
+                            .then_some(direction)
+                    })
+                    .flatten()
+            })
+            .collect::<SmallVec<[_; 4]>>();
+
+        let outputs = self.outputs();
+
         // TODO represent cell contents graphically
         draw_text(
             &self.to_string(),
@@ -203,7 +259,21 @@ impl L3X {
             (lower + text_offset).y,
             font_size,
             primary_color,
-        )
+        );
+
+        let triangle_vertices = [vec2(0.0, 1.0), vec2(-0.25, 0.75), vec2(0.25, 0.75)];
+
+        for output in outputs {
+            let color = if output.is_major() { GREEN } else { RED };
+            let triangle_vertices = triangle_vertices
+                .map(|v| (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower );
+            draw_triangle(
+                triangle_vertices[0],
+                triangle_vertices[1],
+                triangle_vertices[2],
+                color,
+            );
+        }
     }
 }
 

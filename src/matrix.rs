@@ -170,6 +170,7 @@ impl Matrix {
             if location.cmplt(self.dims.as_ivec2()).all() {
                 instruction.draw(
                     &self.instructions,
+                    self.dims,
                     *location,
                     cell_size,
                     offset,
