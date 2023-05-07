@@ -95,12 +95,12 @@ impl From<Direction> for Mat2 {
     /// Gives the transformation needed for a vector pointing downward to be rotated to point in the
     /// given direction
     fn from(value: Direction) -> Self {
-        let reflect = mat2(vec2(0., 1.), vec2(1., 0.));
+        let rotate = mat2(vec2(0., 1.), vec2(-1., 0.));
         match value {
             Direction::Up => -Mat2::IDENTITY,
             Direction::Down => Mat2::IDENTITY,
-            Direction::Left => -reflect,
-            Direction::Right => reflect,
+            Direction::Left => rotate,
+            Direction::Right => rotate*rotate*rotate,
         }
     }
 }
