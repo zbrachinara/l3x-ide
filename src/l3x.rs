@@ -401,7 +401,7 @@ impl L3X {
         let arrow_vertices=[vec2(-0., 0.75), vec2(-0.25, 1.0), vec2(-0.5, 0.75), vec2(-0.3, 0.75), vec2(-0.3, 0.25), vec2(-0.2, 0.25), vec2(-0.2, 0.75)];
         let out_arrow_triangles = triangulate(&arrow_vertices);
         let in_arrow_triangles: Vec<[Vec2; 3]> = out_arrow_triangles.iter().map(|t| t
-            .map(|v| vec2(0.,1.)-v)).collect();
+            .map(|v| vec2(0.,1.25)-v)).collect();
         for output in outputs {
             let out_color = if self.is_one() {GRAY} else {if output.is_major() { GREEN } else { minor_color }};
             /*let triangle_vertices = triangle_vertices.map(|v| {
