@@ -14,7 +14,7 @@ fn triangulate_helper(root: Vec2, pts: &[Vec2]) -> Vec<[Vec2; 3]> {
     let mut index = 0;
     for (i,p) in pts.iter().enumerate() {
         let d = *p-root;
-        if d.perp_dot(right-root)>0. && d.perp_dot(root-left)>0. && (*p-right).perp_dot(left-right)<0. {
+        if d.perp_dot(right-root)<0. && d.perp_dot(root-left)<0. && (*p-right).perp_dot(left-right)>0. {
             let dist=d.dot(d);
             if dist<min_dist {
                 closest=Some(p);
