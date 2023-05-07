@@ -13,6 +13,7 @@ mod matrix;
 mod swapbuffer;
 mod traveler;
 mod registers;
+mod polygon;
 #[cfg(target_arch = "wasm32")]
 mod wasm_log;
 

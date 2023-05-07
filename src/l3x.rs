@@ -5,6 +5,7 @@ use smallvec::{smallvec, SmallVec};
 use strum::IntoEnumIterator;
 
 use crate::registers::Registers;
+use crate::polygon::{draw_polygon, triangulate, draw_triangulation};
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct L3X {
@@ -218,7 +219,12 @@ impl L3X {
             ],
         }
     }
-
+    pub fn is_one(&self) -> bool {
+        match self.command {
+            L3XCommand::Multiply(ref reg) if reg.is_one() => true,
+            _ => false
+        }
+    }
     pub fn draw(
         &self,
         matrix: &HashMap<IVec2, L3X>,
@@ -261,11 +267,13 @@ impl L3X {
             primary_color,
         );
 
-        let triangle_vertices = [vec2(0.0, 1.0), vec2(-0.25, 0.75), vec2(0.25, 0.75)];
-
+        //let triangle_vertices = [vec2(-0.25, 1.0), vec2(-0.5, 0.75), vec2(-0., 0.75)];
+        //let rectangle_vertices = [vec2(-0.3, 0.75), vec2(-0.2, 0.)];
+        let arrow_vertices=[vec2(-0., 0.75), vec2(-0.25, 1.0), vec2(-0.5, 0.75), vec2(-0.3, 0.75), vec2(-0.3, 0.), vec2(-0.2, 0.), vec2(-0.2, 0.75)];
+        let arrow_triangles = triangulate(&arrow_vertices);
         for output in outputs {
             let color = if output.is_major() { GREEN } else { RED };
-            let triangle_vertices = triangle_vertices
+            /*let triangle_vertices = triangle_vertices
                 .map(|v| (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower );
             draw_triangle(
                 triangle_vertices[0],
@@ -273,6 +281,14 @@ impl L3X {
                 triangle_vertices[2],
                 color,
             );
+            
+            let rectangle_vertices = rectangle_vertices
+                .map(|v| (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower );
+            draw_rectangle(rectangle_vertices[0].x, rectangle_vertices[0].y, rectangle_vertices[1].x-rectangle_vertices[0].x, rectangle_vertices[1].y-rectangle_vertices[0].y, color);
+        */
+        let arrow_triangles = arrow_triangles.iter().map(|t| t
+                .map(|v| (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower )).collect();
+        draw_triangulation(arrow_triangles, color);
         }
     }
 }
