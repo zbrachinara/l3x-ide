@@ -272,8 +272,8 @@ impl DrawInstructions {
                         vec2(0., cell_size / 2.) + center,
                     )
                 };
-                draw_line(p1.x, p1.y, center.x, center.y, 6.0, left);
-                draw_line(center.x, center.y, p2.x, p2.y, 6.0, right);
+                //draw_line(p1.x, p1.y, center.x, center.y, 6.0, left);
+                //draw_line(center.x, center.y, p2.x, p2.y, 6.0, right);
             }
             DrawInstructions::IntoLoop(_) => todo!(),
             DrawInstructions::Loop(_) => todo!(),
@@ -361,23 +361,23 @@ impl L3X {
         let text_offset = vec2(0.05, 0.67) * cell_size;
         let lower = (location.as_vec2() * cell_size) + offset;
 
-        // collect input directions
-        // let inputs = Direction::iter()
-        //     .with_offsets(location)
-        //     .filter_map(|(direction, location)| {
-        //         location
-        //             .cmplt(dims.as_ivec2())
-        //             .all()
-        //             .then(|| {
-        //                 matrix
-        //                     .get(&location)
-        //                     .map(|l3x| l3x.direction == direction.opposite())
-        //                     .unwrap_or(false)
-        //                     .then_some(direction)
-        //             })
-        //             .flatten()
-        //     })
-        //     .collect::<SmallVec<[_; 4]>>();
+         //collect input directions
+         let inputs = Direction::iter()
+             .with_offsets(location)
+             .filter_map(|(direction, location)| {
+                 location
+                     .cmplt(dims.as_ivec2())
+                     .all()
+                     .then(|| {
+                         matrix
+                             .get(&location)
+                             .map(|l3x| l3x.direction == direction.opposite())
+                             .unwrap_or(false)
+                             .then_some(direction)
+                     })
+                     .flatten()
+             })
+             .collect::<SmallVec<[_; 4]>>();
 
         let outputs = self.outputs();
 
@@ -389,13 +389,21 @@ impl L3X {
             font_size,
             primary_color,
         );
-
+        let minor_possible = !inputs.iter().all(|d| d==&self.direction.opposite());
+        let minor_color;
+        if minor_possible {
+            minor_color = RED;
+        } else {
+            minor_color = BLANK;
+        }
         //let triangle_vertices = [vec2(-0.25, 1.0), vec2(-0.5, 0.75), vec2(-0., 0.75)];
         //let rectangle_vertices = [vec2(-0.3, 0.75), vec2(-0.2, 0.)];
-        let arrow_vertices=[vec2(-0., 0.75), vec2(-0.25, 1.0), vec2(-0.5, 0.75), vec2(-0.3, 0.75), vec2(-0.3, 0.), vec2(-0.2, 0.), vec2(-0.2, 0.75)];
-        let arrow_triangles = triangulate(&arrow_vertices);
+        let arrow_vertices=[vec2(-0., 0.75), vec2(-0.25, 1.0), vec2(-0.5, 0.75), vec2(-0.3, 0.75), vec2(-0.3, 0.25), vec2(-0.2, 0.25), vec2(-0.2, 0.75)];
+        let out_arrow_triangles = triangulate(&arrow_vertices);
+        let in_arrow_triangles: Vec<[Vec2; 3]> = out_arrow_triangles.iter().map(|t| t
+            .map(|v| vec2(0.,1.)-v)).collect();
         for output in outputs {
-            let color = if output.is_major() { GREEN } else { RED };
+            let out_color = if self.is_one() {GRAY} else {if output.is_major() { GREEN } else { minor_color }};
             /*let triangle_vertices = triangle_vertices.map(|v| {
                 (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower
             });
@@ -410,9 +418,15 @@ impl L3X {
                 .map(|v| (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower );
             draw_rectangle(rectangle_vertices[0].x, rectangle_vertices[0].y, rectangle_vertices[1].x-rectangle_vertices[0].x, rectangle_vertices[1].y-rectangle_vertices[0].y, color);
         */
-        let arrow_triangles = arrow_triangles.iter().map(|t| t
+        let arrow_triangles = out_arrow_triangles.iter().map(|t| t
                 .map(|v| (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower )).collect();
-        draw_triangulation(arrow_triangles, color);
+        draw_triangulation(arrow_triangles, out_color);
+        }
+        for input in inputs {
+            let in_color = if self.is_one() {GRAY} else {if input==self.direction.opposite() {BLUE} else {BROWN}};
+            let arrow_triangles = in_arrow_triangles.iter().map(|t| t
+                .map(|v| (Mat2::from(input) * v + Vec2::splat(1.)) * cell_size / 2. + lower )).collect();
+        draw_triangulation(arrow_triangles, in_color);
         }
 
         for instr in self.draw_instructions(matrix, dims, location) {
