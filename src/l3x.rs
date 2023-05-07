@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use itertools::Itertools;
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
 use strum::IntoEnumIterator;
@@ -67,6 +68,15 @@ impl Direction {
             Direction::Left => Direction::Right,
             Direction::Right => Direction::Left,
         }
+    }
+
+    pub fn horizontal(&self) -> bool {
+        matches!(self, Direction::Left | Direction::Right)
+    }
+
+    /// If the direction is pointing in a positive axis. For macroquad this means down or right
+    pub fn positive(&self) -> bool {
+        matches!(self, Direction::Down | Direction::Right)
     }
 }
 
@@ -202,6 +212,75 @@ impl Output {
     }
 }
 
+#[derive(Clone, Copy, Eq, strum_macros::EnumDiscriminants)]
+#[strum_discriminants(name(DIDiscriminants), vis())]
+pub enum DrawInstructions {
+    /// A minor line connecting the input (left) to the minor output (right)
+    ToMinor(Direction, Direction),
+    /// A major line connecting the input (left) to the major output (right)
+    ToMajor(Direction, Direction),
+    /// A major/minor line connecting the major side to the minor side (which is opposite to the
+    /// given direction)
+    MajorMinor(Direction),
+    /// Feeds an input from the direction into the counterclockwise loop
+    IntoLoop(Direction),
+    /// Constructs a counterclockwise roundabout which feeds into this direction
+    Loop(Direction),
+}
+
+impl PartialEq for DrawInstructions {
+    fn eq(&self, other: &Self) -> bool {
+        // std::mem::discriminant(self) == std::mem::discriminant(other)
+        DIDiscriminants::from(self) == DIDiscriminants::from(other)
+    }
+}
+
+impl PartialOrd for DrawInstructions {
+    /// Ordered by when the instruction should be drawn relative to others. Lesser means drawn
+    /// first, greater means drawn on the topmost layer.
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        (DIDiscriminants::from(self) as u8).partial_cmp(&(DIDiscriminants::from(other) as u8))
+    }
+}
+
+impl Ord for DrawInstructions {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(other).unwrap()
+    }
+}
+
+impl DrawInstructions {
+    fn draw(&self, cell_size: f32, offset: Vec2) {
+        match self {
+            DrawInstructions::ToMinor(_, _) => todo!(),
+            DrawInstructions::ToMajor(_, _) => todo!(),
+            DrawInstructions::MajorMinor(di) => {
+                let (left, right) = if di.positive() {
+                    (RED, GREEN)
+                } else {
+                    (GREEN, RED)
+                };
+                let center = offset + Vec2::splat(cell_size / 2.);
+                let (p1, p2) = if di.horizontal() {
+                    (
+                        vec2(-cell_size / 2., 0.) + center,
+                        vec2(cell_size / 2., 0.) + center,
+                    )
+                } else {
+                    (
+                        vec2(0., -cell_size / 2.) + center,
+                        vec2(0., cell_size / 2.) + center,
+                    )
+                };
+                draw_line(p1.x, p1.y, center.x, center.y, 6.0, left);
+                draw_line(center.x, center.y, p2.x, p2.y, 6.0, right);
+            }
+            DrawInstructions::IntoLoop(_) => todo!(),
+            DrawInstructions::Loop(_) => todo!(),
+        }
+    }
+}
+
 impl L3X {
     pub fn outputs(&self) -> SmallVec<[Output; 2]> {
         match self.command {
@@ -225,20 +304,13 @@ impl L3X {
             _ => false
         }
     }
-    pub fn draw(
+
+    pub fn draw_instructions(
         &self,
         matrix: &HashMap<IVec2, L3X>,
         dims: UVec2,
         location: IVec2,
-        cell_size: f32,
-        offset: Vec2,
-        font_size: f32,
-        primary_color: Color,
-    ) {
-        let text_offset = vec2(0.05, 0.67) * cell_size;
-        let lower = (location.as_vec2() * cell_size) + offset;
-
-        // collect input directions
+    ) -> SmallVec<[DrawInstructions; 4]> {
         let inputs = Direction::iter()
             .with_offsets(location)
             .filter_map(|(direction, location)| {
@@ -258,6 +330,57 @@ impl L3X {
 
         let outputs = self.outputs();
 
+        let mut v = smallvec![];
+
+        match self.command {
+            L3XCommand::Multiply(ref x) if x.is_one() => (),
+            L3XCommand::Multiply(_) => {
+                if outputs.iter().any(|o| inputs.contains(&o.direction())) {
+                    v.push(DrawInstructions::MajorMinor(self.direction))
+                }
+            }
+            L3XCommand::Duplicate => (),
+            L3XCommand::Queue => (),
+            L3XCommand::Annihilate => (),
+        }
+
+        v.sort();
+        v
+    }
+
+    pub fn draw(
+        &self,
+        matrix: &HashMap<IVec2, L3X>,
+        dims: UVec2,
+        location: IVec2,
+        cell_size: f32,
+        offset: Vec2,
+        font_size: f32,
+        primary_color: Color,
+    ) {
+        let text_offset = vec2(0.05, 0.67) * cell_size;
+        let lower = (location.as_vec2() * cell_size) + offset;
+
+        // collect input directions
+        // let inputs = Direction::iter()
+        //     .with_offsets(location)
+        //     .filter_map(|(direction, location)| {
+        //         location
+        //             .cmplt(dims.as_ivec2())
+        //             .all()
+        //             .then(|| {
+        //                 matrix
+        //                     .get(&location)
+        //                     .map(|l3x| l3x.direction == direction.opposite())
+        //                     .unwrap_or(false)
+        //                     .then_some(direction)
+        //             })
+        //             .flatten()
+        //     })
+        //     .collect::<SmallVec<[_; 4]>>();
+
+        let outputs = self.outputs();
+
         // TODO represent cell contents graphically
         draw_text(
             &self.to_string(),
@@ -273,8 +396,9 @@ impl L3X {
         let arrow_triangles = triangulate(&arrow_vertices);
         for output in outputs {
             let color = if output.is_major() { GREEN } else { RED };
-            /*let triangle_vertices = triangle_vertices
-                .map(|v| (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower );
+            /*let triangle_vertices = triangle_vertices.map(|v| {
+                (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower
+            });
             draw_triangle(
                 triangle_vertices[0],
                 triangle_vertices[1],
@@ -289,6 +413,10 @@ impl L3X {
         let arrow_triangles = arrow_triangles.iter().map(|t| t
                 .map(|v| (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower )).collect();
         draw_triangulation(arrow_triangles, color);
+        }
+
+        for instr in self.draw_instructions(matrix, dims, location) {
+            instr.draw(cell_size, lower)
         }
     }
 }
