@@ -162,7 +162,7 @@ impl Matrix {
 
         ui.horizontal(|ui| {
             ui.label("Simulation rate (in frame time)");
-            ui.add(egui::widgets::Slider::new(&mut self.period, 5..=120))
+            ui.add(egui::widgets::Slider::new(&mut self.period, 1..=120))
         });
     }
 
