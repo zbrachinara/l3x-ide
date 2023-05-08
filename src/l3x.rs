@@ -5,8 +5,8 @@ use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
 use strum::IntoEnumIterator;
 
+use crate::polygon::{draw_polygon, draw_triangulation, triangulate};
 use crate::registers::Registers;
-use crate::polygon::{draw_polygon, triangulate, draw_triangulation};
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct L3X {
@@ -100,7 +100,7 @@ impl From<Direction> for Mat2 {
             Direction::Up => -Mat2::IDENTITY,
             Direction::Down => Mat2::IDENTITY,
             Direction::Left => rotate,
-            Direction::Right => rotate*rotate*rotate,
+            Direction::Right => rotate * rotate * rotate,
         }
     }
 }
@@ -302,76 +302,95 @@ impl L3X {
         &self,
         matrix: &HashMap<IVec2, L3X>,
         dims: UVec2,
-        location: IVec2) -> SmallVec<[Direction;4]>{
-            Direction::iter()
-             .with_offsets(location)
-             .filter_map(|(direction, location)| {
-                 location
-                     .cmplt(dims.as_ivec2())
-                     .all()
-                     .then(|| {
-                         matrix
-                             .get(&location)
-                             .map(|l3x| !l3x.outputs().iter().all(|o| o.direction()!=direction.opposite()))
-                             .unwrap_or(false)
-                             .then_some(direction)
-                     })
-                     .flatten()
-             })
-             .collect::<SmallVec<[_; 4]>>()
+        location: IVec2,
+    ) -> SmallVec<[Direction; 4]> {
+        Direction::iter()
+            .with_offsets(location)
+            .filter_map(|(direction, location)| {
+                location
+                    .cmplt(dims.as_ivec2())
+                    .all()
+                    .then(|| {
+                        matrix
+                            .get(&location)
+                            .map(|l3x| {
+                                !l3x.outputs()
+                                    .iter()
+                                    .all(|o| o.direction() != direction.opposite())
+                            })
+                            .unwrap_or(false)
+                            .then_some(direction)
+                    })
+                    .flatten()
+            })
+            .collect::<SmallVec<[_; 4]>>()
     }
-    pub fn minorIsActive(&self,
+    pub fn minor_is_active(
+        &self,
         matrix: &HashMap<IVec2, L3X>,
         dims: UVec2,
         location: IVec2,
-        recursion_depth: usize)->bool {
-            !self.active_inputs(matrix, dims, location, recursion_depth).iter().all(|d| d==&self.direction.opposite())
-        }
-    pub fn active_outputs(&self,
+        recursion_depth: usize,
+    ) -> bool {
+        !self
+            .active_inputs(matrix, dims, location, recursion_depth)
+            .iter()
+            .all(|d| d == &self.direction.opposite())
+    }
+    pub fn active_outputs(
+        &self,
         matrix: &HashMap<IVec2, L3X>,
         dims: UVec2,
         location: IVec2,
-        recursion_depth: usize) ->SmallVec<[Output;2]>{
-            match self.command {
-                L3XCommand::Multiply(ref reg) if !reg.is_one()=>
-                    if self.minorIsActive(matrix, dims, location, recursion_depth) {smallvec![
+        recursion_depth: usize,
+    ) -> SmallVec<[Output; 2]> {
+        match self.command {
+            L3XCommand::Multiply(ref reg) if !reg.is_one() => {
+                if self.minor_is_active(matrix, dims, location, recursion_depth) {
+                    smallvec![
                         Output::Major(self.direction),
                         Output::Minor(self.direction.opposite()),
-                    ]} else {smallvec![Output::Major(self.direction)]}
-                _=>self.outputs()
+                    ]
+                } else {
+                    smallvec![Output::Major(self.direction)]
+                }
             }
-            
+            _ => self.outputs(),
         }
-    pub fn active_inputs(&self,
+    }
+    pub fn active_inputs(
+        &self,
         matrix: &HashMap<IVec2, L3X>,
         dims: UVec2,
         location: IVec2,
-        recursion_depth: usize) -> SmallVec<[Direction;4]>{
-            if recursion_depth==0 {
-                return self.inputs(matrix, dims, location);
-            }
-            Direction::iter()
-             .with_offsets(location)
-             .filter_map(|(direction, location)| {
-                 location
-                     .cmplt(dims.as_ivec2())
-                     .all()
-                     .then(|| {
-                         matrix
-                             .get(&location)
-                             .map(|l3x| !l3x.active_outputs(matrix, dims, location, recursion_depth-1).iter().all(|o| o.direction()!=direction.opposite()))
-                             .unwrap_or(false)
-                             .then_some(direction)
-                     })
-                     .flatten()
-             })
-             .collect::<SmallVec<[_; 4]>>()
+        recursion_depth: usize,
+    ) -> SmallVec<[Direction; 4]> {
+        if recursion_depth == 0 {
+            return self.inputs(matrix, dims, location);
         }
+        Direction::iter()
+            .with_offsets(location)
+            .filter_map(|(direction, location)| {
+                location
+                    .cmplt(dims.as_ivec2())
+                    .all()
+                    .then(|| {
+                        matrix
+                            .get(&location)
+                            .map(|l3x| {
+                                !l3x.active_outputs(matrix, dims, location, recursion_depth - 1)
+                                    .iter()
+                                    .all(|o| o.direction() != direction.opposite())
+                            })
+                            .unwrap_or(false)
+                            .then_some(direction)
+                    })
+                    .flatten()
+            })
+            .collect::<SmallVec<[_; 4]>>()
+    }
     pub fn is_one(&self) -> bool {
-        match self.command {
-            L3XCommand::Multiply(ref reg) if reg.is_one() => true,
-            _ => false
-        }
+        matches!(self.command, L3XCommand::Multiply(ref reg) if reg.is_one())
     }
 
     pub fn draw_instructions(
@@ -430,8 +449,8 @@ impl L3X {
         let text_offset = vec2(0.05, 0.67) * cell_size;
         let lower = (location.as_vec2() * cell_size) + offset;
 
-         //collect input directions
-         let inputs=self.active_inputs(matrix, dims, location, 2);
+        //collect input directions
+        let inputs = self.active_inputs(matrix, dims, location, 2);
 
         let outputs = self.active_outputs(matrix, dims, location, 2);
 
@@ -443,38 +462,71 @@ impl L3X {
             font_size,
             primary_color,
         );
-        let minor_color=RED;
+        let minor_color = RED;
         //let triangle_vertices = [vec2(-0.25, 1.0), vec2(-0.5, 0.75), vec2(-0., 0.75)];
         //let rectangle_vertices = [vec2(-0.3, 0.75), vec2(-0.2, 0.)];
-        let arrow_vertices=[vec2(-0., 0.75), vec2(-0.25, 1.0), vec2(-0.5, 0.75), vec2(-0.3, 0.75), vec2(-0.3, 0.25), vec2(-0.2, 0.25), vec2(-0.2, 0.75)];
+        let arrow_vertices = [
+            vec2(-0., 0.75),
+            vec2(-0.25, 1.0),
+            vec2(-0.5, 0.75),
+            vec2(-0.3, 0.75),
+            vec2(-0.3, 0.25),
+            vec2(-0.2, 0.25),
+            vec2(-0.2, 0.75),
+        ];
         let out_arrow_triangles = triangulate(&arrow_vertices);
-        let in_arrow_triangles: Vec<[Vec2; 3]> = out_arrow_triangles.iter().map(|t| t
-            .map(|v| vec2(0.,1.25)-v)).collect();
+        let in_arrow_triangles: Vec<[Vec2; 3]> = out_arrow_triangles
+            .iter()
+            .map(|t| t.map(|v| vec2(0., 1.25) - v))
+            .collect();
         for output in outputs {
-            let out_color = if self.is_one() {GRAY} else {if output.is_major() { GREEN } else { minor_color }};
+            let out_color = if self.is_one() {
+                GRAY
+            } else if output.is_major() {
+                GREEN
+            } else {
+                minor_color
+            };
             /*let triangle_vertices = triangle_vertices.map(|v| {
-                (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower
-            });
-            draw_triangle(
-                triangle_vertices[0],
-                triangle_vertices[1],
-                triangle_vertices[2],
-                color,
-            );
-            
-            let rectangle_vertices = rectangle_vertices
-                .map(|v| (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower );
-            draw_rectangle(rectangle_vertices[0].x, rectangle_vertices[0].y, rectangle_vertices[1].x-rectangle_vertices[0].x, rectangle_vertices[1].y-rectangle_vertices[0].y, color);
-        */
-        let arrow_triangles = out_arrow_triangles.iter().map(|t| t
-                .map(|v| (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower )).collect();
-        draw_triangulation(arrow_triangles, out_color);
+                    (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower
+                });
+                draw_triangle(
+                    triangle_vertices[0],
+                    triangle_vertices[1],
+                    triangle_vertices[2],
+                    color,
+                );
+
+                let rectangle_vertices = rectangle_vertices
+                    .map(|v| (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower );
+                draw_rectangle(rectangle_vertices[0].x, rectangle_vertices[0].y, rectangle_vertices[1].x-rectangle_vertices[0].x, rectangle_vertices[1].y-rectangle_vertices[0].y, color);
+            */
+            let arrow_triangles = out_arrow_triangles
+                .iter()
+                .map(|t| {
+                    t.map(|v| {
+                        (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2.
+                            + lower
+                    })
+                })
+                .collect();
+            draw_triangulation(arrow_triangles, out_color);
         }
         for input in inputs {
-            let in_color = if self.is_one() {GRAY} else {if input==self.direction.opposite() {BLUE} else {BROWN}};
-            let arrow_triangles = in_arrow_triangles.iter().map(|t| t
-                .map(|v| (Mat2::from(input) * v + Vec2::splat(1.)) * cell_size / 2. + lower )).collect();
-        draw_triangulation(arrow_triangles, in_color);
+            let in_color = if self.is_one() {
+                GRAY
+            } else if input == self.direction.opposite() {
+                BLUE
+            } else {
+                BROWN
+            };
+            let arrow_triangles = in_arrow_triangles
+                .iter()
+                .map(|t| {
+                    t.map(|v| (Mat2::from(input) * v + Vec2::splat(1.)) * cell_size / 2. + lower)
+                })
+                .collect();
+            draw_triangulation(arrow_triangles, in_color);
         }
 
         for instr in self.draw_instructions(matrix, dims, location) {
