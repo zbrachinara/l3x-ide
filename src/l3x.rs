@@ -464,20 +464,28 @@ impl L3X {
         let minor_color = RED;
         //let triangle_vertices = [vec2(-0.25, 1.0), vec2(-0.5, 0.75), vec2(-0., 0.75)];
         //let rectangle_vertices = [vec2(-0.3, 0.75), vec2(-0.2, 0.)];
-        let arrow_vertices = vec![
+        let out_arrow_vertices = vec![
             vec2(-0., 0.75),
             vec2(-0.25, 1.0),
             vec2(-0.5, 0.75),
             vec2(-0.3, 0.75),
             vec2(-0.3, 0.25),
+            vec2(0.,0.),
             vec2(-0.2, 0.25),
             vec2(-0.2, 0.75),
         ];
-        let out_arrow_triangles = triangulate(arrow_vertices);
-        let in_arrow_triangles: Vec<[Vec2; 3]> = out_arrow_triangles
-            .iter()
-            .map(|t| t.map(|v| vec2(0., 1.25) - v))
-            .collect();
+        let in_arrow_vertices = vec![
+            vec2(0.3, 1.0),
+            vec2(0.2, 1.0),
+            vec2(0.2, 0.5),
+            vec2(0.,0.5),
+            vec2(0.,0.),
+            vec2(0.1,0.),
+            vec2(0.1,0.4),
+            vec2(0.3, 0.4),
+        ];
+        let out_arrow_triangles = triangulate(out_arrow_vertices);
+        let in_arrow_triangles: Vec<[Vec2; 3]> = triangulate(in_arrow_vertices);
         for output in outputs {
             let out_color = if self.is_one() {
                 GRAY
