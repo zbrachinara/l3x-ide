@@ -371,7 +371,7 @@ impl L3X {
                      .then(|| {
                          matrix
                              .get(&location)
-                             .map(|l3x| l3x.direction == direction.opposite())
+                             .map(|l3x| !l3x.outputs().iter().all(|o| o.direction()!=direction.opposite()))
                              .unwrap_or(false)
                              .then_some(direction)
                      })
