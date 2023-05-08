@@ -298,6 +298,75 @@ impl L3X {
             ],
         }
     }
+    pub fn inputs(
+        &self,
+        matrix: &HashMap<IVec2, L3X>,
+        dims: UVec2,
+        location: IVec2) -> SmallVec<[Direction;4]>{
+            Direction::iter()
+             .with_offsets(location)
+             .filter_map(|(direction, location)| {
+                 location
+                     .cmplt(dims.as_ivec2())
+                     .all()
+                     .then(|| {
+                         matrix
+                             .get(&location)
+                             .map(|l3x| !l3x.outputs().iter().all(|o| o.direction()!=direction.opposite()))
+                             .unwrap_or(false)
+                             .then_some(direction)
+                     })
+                     .flatten()
+             })
+             .collect::<SmallVec<[_; 4]>>()
+    }
+    pub fn minorIsActive(&self,
+        matrix: &HashMap<IVec2, L3X>,
+        dims: UVec2,
+        location: IVec2,
+        recursion_depth: usize)->bool {
+            !self.active_inputs(matrix, dims, location, recursion_depth).iter().all(|d| d==&self.direction.opposite())
+        }
+    pub fn active_outputs(&self,
+        matrix: &HashMap<IVec2, L3X>,
+        dims: UVec2,
+        location: IVec2,
+        recursion_depth: usize) ->SmallVec<[Output;2]>{
+            match self.command {
+                L3XCommand::Multiply(ref reg) if !reg.is_one()=>
+                    if self.minorIsActive(matrix, dims, location, recursion_depth) {smallvec![
+                        Output::Major(self.direction),
+                        Output::Minor(self.direction.opposite()),
+                    ]} else {smallvec![Output::Major(self.direction)]}
+                _=>self.outputs()
+            }
+            
+        }
+    pub fn active_inputs(&self,
+        matrix: &HashMap<IVec2, L3X>,
+        dims: UVec2,
+        location: IVec2,
+        recursion_depth: usize) -> SmallVec<[Direction;4]>{
+            if recursion_depth==0 {
+                return self.inputs(matrix, dims, location);
+            }
+            Direction::iter()
+             .with_offsets(location)
+             .filter_map(|(direction, location)| {
+                 location
+                     .cmplt(dims.as_ivec2())
+                     .all()
+                     .then(|| {
+                         matrix
+                             .get(&location)
+                             .map(|l3x| !l3x.active_outputs(matrix, dims, location, recursion_depth-1).iter().all(|o| o.direction()!=direction.opposite()))
+                             .unwrap_or(false)
+                             .then_some(direction)
+                     })
+                     .flatten()
+             })
+             .collect::<SmallVec<[_; 4]>>()
+        }
     pub fn is_one(&self) -> bool {
         match self.command {
             L3XCommand::Multiply(ref reg) if reg.is_one() => true,
@@ -362,24 +431,9 @@ impl L3X {
         let lower = (location.as_vec2() * cell_size) + offset;
 
          //collect input directions
-         let inputs = Direction::iter()
-             .with_offsets(location)
-             .filter_map(|(direction, location)| {
-                 location
-                     .cmplt(dims.as_ivec2())
-                     .all()
-                     .then(|| {
-                         matrix
-                             .get(&location)
-                             .map(|l3x| !l3x.outputs().iter().all(|o| o.direction()!=direction.opposite()))
-                             .unwrap_or(false)
-                             .then_some(direction)
-                     })
-                     .flatten()
-             })
-             .collect::<SmallVec<[_; 4]>>();
+         let inputs=self.active_inputs(matrix, dims, location, 2);
 
-        let outputs = self.outputs();
+        let outputs = self.active_outputs(matrix, dims, location, 2);
 
         // TODO represent cell contents graphically
         draw_text(
@@ -389,13 +443,7 @@ impl L3X {
             font_size,
             primary_color,
         );
-        let minor_possible = !inputs.iter().all(|d| d==&self.direction.opposite());
-        let minor_color;
-        if minor_possible {
-            minor_color = RED;
-        } else {
-            minor_color = BLANK;
-        }
+        let minor_color=RED;
         //let triangle_vertices = [vec2(-0.25, 1.0), vec2(-0.5, 0.75), vec2(-0., 0.75)];
         //let rectangle_vertices = [vec2(-0.3, 0.75), vec2(-0.2, 0.)];
         let arrow_vertices=[vec2(-0., 0.75), vec2(-0.25, 1.0), vec2(-0.5, 0.75), vec2(-0.3, 0.75), vec2(-0.3, 0.25), vec2(-0.2, 0.25), vec2(-0.2, 0.75)];
