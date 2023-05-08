@@ -803,7 +803,7 @@ dependencies = [
 
 [[package]]
 name = "l3x-ide"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "async-executor",
  "bitflags 2.2.1",
