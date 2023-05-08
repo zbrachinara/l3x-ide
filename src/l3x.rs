@@ -484,8 +484,15 @@ impl L3X {
             vec2(0.1,0.4),
             vec2(0.3, 0.4),
         ];
+        let through_vertices = vec![
+            vec2(0.3, 1.0),
+            vec2(0.2, 1.0),
+            vec2(0.2, -0.2),
+            vec2(0.3,-0.2),
+        ];
         let out_arrow_triangles = triangulate(out_arrow_vertices);
         let in_arrow_triangles: Vec<[Vec2; 3]> = triangulate(in_arrow_vertices);
+        let through_triangles = triangulate(through_vertices);
         for output in outputs {
             let out_color = if self.is_one() {
                 GRAY
@@ -527,7 +534,7 @@ impl L3X {
             } else {
                 BROWN
             };
-            let arrow_triangles = in_arrow_triangles
+            let arrow_triangles = (if input==self.direction.opposite() {&through_triangles} else {&in_arrow_triangles})
                 .iter()
                 .map(|t| {
                     t.map(|v| (Mat2::from(input) * v + Vec2::splat(1.)) * cell_size / 2. + lower)
