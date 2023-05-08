@@ -263,7 +263,9 @@ impl Matrix {
         ui.separator();
         ui.collapsing_open("Import tools", |ui| {
             #[cfg(not(target_arch = "wasm32"))]
-            self.ui_import(ui, executor)
+            self.ui_import(ui, executor);
+            #[cfg(target_arch = "wasm32")]
+            self.ui_import(ui);
         });
 
         ui.separator();

@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
-use itertools::Itertools;
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
 use strum::IntoEnumIterator;
 
-use crate::polygon::{draw_polygon, draw_triangulation, triangulate};
+use crate::polygon::{draw_triangulation, triangulate};
 use crate::registers::Registers;
 
 #[derive(PartialEq, Eq, Debug)]

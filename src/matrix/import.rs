@@ -1,4 +1,3 @@
-use async_executor::LocalExecutor;
 use csv::ReaderBuilder;
 use macroquad::prelude::*;
 use ndarray_csv::Array2Reader;
@@ -10,7 +9,7 @@ use super::Matrix;
 
 #[cfg(not(target_arch = "wasm32"))]
 impl Matrix {
-    pub fn start_file_import(&mut self, executor: &mut LocalExecutor) {
+    pub fn start_file_import(&mut self, executor: &mut async_executor::LocalExecutor) {
         let states = &mut self.future_states;
         if states.read_file.is_none() {
             states.read_file = Some(executor.spawn(async {
