@@ -7,7 +7,7 @@ use vec_drain_where::VecDrainWhereExt;
 
 #[cfg(not(target_arch = "wasm32"))]
 mod future_states;
-mod import;
+mod file;
 mod ui;
 
 use crate::{
