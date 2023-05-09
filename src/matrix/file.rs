@@ -54,7 +54,6 @@ impl Matrix {
                 std::mem::take(&mut states.write_file).unwrap()
             );
             then {
-
                 let mut file = match OpenOptions::new()
                     .truncate(false)
                     .write(true)
@@ -67,7 +66,6 @@ impl Matrix {
                     }       
                 };
                 
-
                 match self.export_data() {
                     Ok(data) => {
                         let _ = file.write(&data);
