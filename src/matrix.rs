@@ -120,6 +120,7 @@ impl Matrix {
         #[cfg(not(target_arch = "wasm32"))]
         {
             self.try_open_file();
+            self.try_export_file();
         }
     }
 

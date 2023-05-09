@@ -242,7 +242,9 @@ impl Matrix {
                     self.start_file_import(executor);
                 }
             });
-            ui.button("Export");
+            if ui.button("Export").clicked() {
+                self.start_file_export(executor);
+            };
         });
     }
 

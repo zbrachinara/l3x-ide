@@ -1,7 +1,8 @@
-use csv::ReaderBuilder;
+use csv::{ReaderBuilder, WriterBuilder};
 use macroquad::prelude::*;
-use ndarray_csv::Array2Reader;
-use std::collections::HashMap;
+use ndarray::{ArrayBase, OwnedRepr};
+use ndarray_csv::{Array2Reader, Array2Writer};
+use std::{borrow::Cow, collections::HashMap, fs::OpenOptions, io::Write};
 
 use crate::l3x::{L3XParseError, MaybeL3X};
 
@@ -36,9 +37,76 @@ impl Matrix {
 
         }
     }
+
+    pub fn start_file_export(&mut self, executor: &mut async_executor::LocalExecutor) {
+        let states = &mut self.future_states;
+        if states.write_file.is_none() {
+            states.write_file = Some(executor.spawn(rfd::AsyncFileDialog::new().save_file()));
+        }
+    }
+
+    pub fn try_export_file(&mut self) {
+        let states = &mut self.future_states;
+        if_chain::if_chain! {
+            if let Some(ref task) = states.write_file;
+            if task.is_finished();
+            if let Some(handle) = futures_lite::future::block_on(
+                std::mem::take(&mut states.write_file).unwrap()
+            );
+            then {
+
+                let mut file = match OpenOptions::new()
+                    .truncate(false)
+                    .write(true)
+                    .create(true)
+                    .open(handle.path()) {
+                    Ok(fi) => fi,
+                    Err(e) => {
+                        log::error!("File could not be opnened: {e}");
+                        return;
+                    }       
+                };
+                
+
+                match self.export_data() {
+                    Ok(data) => {
+                        let _ = file.write(&data);
+                    },
+                    Err(e) => {
+                        log::error!("CSV writing failed with error: {e}")
+                    },
+                }
+            }
+        }
+    }
 }
 
 impl Matrix {
+    fn export_data(&self) -> Result<Vec<u8>, csv::Error> {
+        log::debug!("Beginning file export");
+        let mut arr = ArrayBase::<OwnedRepr<_>, _>::from_elem(
+            [self.dims.x as usize, self.dims.y as usize],
+            Cow::Borrowed(""),
+        );
+
+        for (loc @ &IVec2 { x, y }, item) in &self.instructions {
+            if loc.cmplt(self.dims.as_ivec2()).all() {
+                arr[(x as usize, y as usize)] = Cow::Owned(item.to_string());
+            }
+        }
+
+        let mut buf_out = Vec::new();
+        let mut writer = WriterBuilder::new()
+            .has_headers(false)
+            .from_writer(&mut buf_out);
+        if let Err(e) = writer.serialize_array2(&arr) {
+            Err(e)
+        } else {
+            drop(writer);
+            Ok(buf_out)
+        }
+    }
+
     fn import_data(&mut self, data: &[u8]) {
         let mut reader = ReaderBuilder::new().has_headers(false).from_reader(data);
         let Ok(array) = reader.deserialize_array2_dynamic::<String>() else {return};
