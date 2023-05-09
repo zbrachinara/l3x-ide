@@ -1,11 +1,24 @@
 use std::collections::HashMap;
 
+use arrayvec::ArrayVec;
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
 use strum::IntoEnumIterator;
 
 use crate::polygon::{draw_triangulation, triangulate};
 use crate::registers::Registers;
+
+macro_rules! arrayvec {
+    () => (
+        arrayvec::ArrayVec::new()
+    );
+    ($elem:expr; $n:expr) => (
+        [$elem; $n].as_slice().try_into().unwrap()
+    );
+    ($($x:expr),+ $(,)?) => (
+        [$($x),+].as_slice().try_into().unwrap()
+    );
+}
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct L3X {
@@ -281,17 +294,17 @@ impl DrawInstructions {
 }
 
 impl L3X {
-    pub fn outputs(&self) -> SmallVec<[Output; 2]> {
+    pub fn outputs(&self) -> ArrayVec<Output, 2> {
         match self.command {
             L3XCommand::Multiply(ref reg) if reg.is_one() => {
-                smallvec![Output::Major(self.direction)]
+                arrayvec![Output::Major(self.direction)]
             }
-            L3XCommand::Queue | L3XCommand::Annihilate => smallvec![Output::Major(self.direction)],
-            L3XCommand::Multiply(_) => smallvec![
+            L3XCommand::Queue | L3XCommand::Annihilate => arrayvec![Output::Major(self.direction)],
+            L3XCommand::Multiply(_) => arrayvec![
                 Output::Major(self.direction),
                 Output::Minor(self.direction.opposite()),
             ],
-            L3XCommand::Duplicate => smallvec![
+            L3XCommand::Duplicate => arrayvec![
                 Output::Major(self.direction),
                 Output::Major(self.direction.opposite()),
             ],
@@ -302,7 +315,7 @@ impl L3X {
         matrix: &HashMap<IVec2, L3X>,
         dims: UVec2,
         location: IVec2,
-    ) -> SmallVec<[Direction; 4]> {
+    ) -> ArrayVec<Direction, 4> {
         Direction::iter()
             .with_offsets(location)
             .filter_map(|(direction, location)| {
@@ -322,7 +335,7 @@ impl L3X {
                     })
                     .flatten()
             })
-            .collect::<SmallVec<[_; 4]>>()
+            .collect()
     }
     pub fn minor_is_active(
         &self,
@@ -342,16 +355,16 @@ impl L3X {
         dims: UVec2,
         location: IVec2,
         recursion_depth: usize,
-    ) -> SmallVec<[Output; 2]> {
+    ) -> ArrayVec<Output, 2> {
         match self.command {
             L3XCommand::Multiply(ref reg) if !reg.is_one() => {
                 if self.minor_is_active(matrix, dims, location, recursion_depth) {
-                    smallvec![
+                    arrayvec![
                         Output::Major(self.direction),
                         Output::Minor(self.direction.opposite()),
                     ]
                 } else {
-                    smallvec![Output::Major(self.direction)]
+                    arrayvec![Output::Major(self.direction)]
                 }
             }
             _ => self.outputs(),
@@ -363,7 +376,7 @@ impl L3X {
         dims: UVec2,
         location: IVec2,
         recursion_depth: usize,
-    ) -> SmallVec<[Direction; 4]> {
+    ) -> ArrayVec<Direction, 4> {
         if recursion_depth == 0 {
             return self.inputs(matrix, dims, location);
         }
@@ -386,7 +399,7 @@ impl L3X {
                     })
                     .flatten()
             })
-            .collect::<SmallVec<[_; 4]>>()
+            .collect()
     }
     pub fn is_one(&self) -> bool {
         matches!(self.command, L3XCommand::Multiply(ref reg) if reg.is_one())
@@ -470,7 +483,7 @@ impl L3X {
             vec2(-0.5, 0.75),
             vec2(-0.3, 0.75),
             vec2(-0.3, 0.25),
-            vec2(0.,0.),
+            vec2(0., 0.),
             vec2(-0.2, 0.25),
             vec2(-0.2, 0.75),
         ];
@@ -478,17 +491,17 @@ impl L3X {
             vec2(0.3, 1.0),
             vec2(0.2, 1.0),
             vec2(0.2, 0.5),
-            vec2(0.,0.5),
-            vec2(0.,0.),
-            vec2(0.1,0.),
-            vec2(0.1,0.4),
+            vec2(0., 0.5),
+            vec2(0., 0.),
+            vec2(0.1, 0.),
+            vec2(0.1, 0.4),
             vec2(0.3, 0.4),
         ];
         let through_vertices = vec![
             vec2(0.3, 1.0),
             vec2(0.2, 1.0),
             vec2(0.2, -0.2),
-            vec2(0.3,-0.2),
+            vec2(0.3, -0.2),
         ];
         let out_arrow_triangles = triangulate(out_arrow_vertices);
         let in_arrow_triangles: Vec<[Vec2; 3]> = triangulate(in_arrow_vertices);
@@ -534,12 +547,14 @@ impl L3X {
             } else {
                 BROWN
             };
-            let arrow_triangles = (if input==self.direction.opposite() {&through_triangles} else {&in_arrow_triangles})
-                .iter()
-                .map(|t| {
-                    t.map(|v| (Mat2::from(input) * v + Vec2::splat(1.)) * cell_size / 2. + lower)
-                })
-                .collect();
+            let arrow_triangles = (if input == self.direction.opposite() {
+                &through_triangles
+            } else {
+                &in_arrow_triangles
+            })
+            .iter()
+            .map(|t| t.map(|v| (Mat2::from(input) * v + Vec2::splat(1.)) * cell_size / 2. + lower))
+            .collect();
             draw_triangulation(arrow_triangles, in_color);
         }
 
