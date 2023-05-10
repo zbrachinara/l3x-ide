@@ -159,16 +159,15 @@ impl Matrix {
         }
 
         // box around the matrix
-        {
-            draw_rectangle_lines(
-                offset.x,
-                offset.y,
-                self.dims.x as f32 * cell_size,
-                self.dims.y as f32 * cell_size,
-                4.0,
-                primary_color,
-            )
-        }
+
+        draw_rectangle_lines(
+            offset.x,
+            offset.y,
+            self.dims.x as f32 * cell_size,
+            self.dims.y as f32 * cell_size,
+            4.0,
+            primary_color,
+        );
 
         if self.gridlines {
             for column in 1..self.dims.x {
