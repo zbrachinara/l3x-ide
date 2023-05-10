@@ -159,7 +159,6 @@ impl Matrix {
         }
 
         // box around the matrix
-
         draw_rectangle_lines(
             offset.x,
             offset.y,
