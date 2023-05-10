@@ -5,8 +5,9 @@ use itertools::Itertools;
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
 use strum::IntoEnumIterator;
+use tap::Pipe;
 
-use crate::polygon::{draw_triangulation, triangulate, triangulate_indices};
+use crate::polygon::triangulate_indices;
 use crate::registers::Registers;
 
 macro_rules! arrayvec {
@@ -464,7 +465,6 @@ impl L3X {
 
         //collect input directions
         let inputs = self.active_inputs(matrix, dims, location, 2);
-
         let outputs = self.active_outputs(matrix, dims, location, 2);
 
         // TODO represent cell contents graphically
@@ -476,8 +476,7 @@ impl L3X {
             primary_color,
         );
         let minor_color = RED;
-        //let triangle_vertices = [vec2(-0.25, 1.0), vec2(-0.5, 0.75), vec2(-0., 0.75)];
-        //let rectangle_vertices = [vec2(-0.3, 0.75), vec2(-0.2, 0.)];
+
         let out_arrow_vertices = vec![
             vec2(-0., 0.75),
             vec2(-0.25, 1.0),
@@ -504,10 +503,11 @@ impl L3X {
             vec2(0.2, -0.2),
             vec2(0.3, -0.2),
         ];
-        let out_arrow_triangles = triangulate(out_arrow_vertices.clone());
         let out_arrow_triangulation = triangulate_indices(&out_arrow_vertices);
-        let in_arrow_triangles: Vec<[Vec2; 3]> = triangulate(in_arrow_vertices);
-        let through_triangles = triangulate(through_vertices);
+        let in_arrow_triangulation = triangulate_indices(&in_arrow_vertices);
+        let through_triangulation = triangulate_indices(&through_vertices);
+        // let in_arrow_triangles: Vec<[Vec2; 3]> = triangulate(in_arrow_vertices);
+        // let through_triangles = triangulate(through_vertices);
         for output in outputs {
             let out_color = if self.is_one() {
                 GRAY
@@ -542,15 +542,32 @@ impl L3X {
             } else {
                 BROWN
             };
-            let arrow_triangles = (if input == self.direction.opposite() {
-                &through_triangles
+            let (vertices, indices) = (if input == self.direction.opposite() {
+                // &through_triangles
+                (through_vertices.clone(), through_triangulation.clone())
             } else {
-                &in_arrow_triangles
+                (in_arrow_vertices.clone(), in_arrow_triangulation.clone())
             })
-            .iter()
-            .map(|t| t.map(|v| (Mat2::from(input) * v + Vec2::splat(1.)) * cell_size / 2. + lower))
-            .collect();
-            draw_triangulation(arrow_triangles, in_color);
+            .pipe(|(vertices, triangulation)| {
+                (
+                    vertices
+                        .into_iter()
+                        .map(|v| (Mat2::from(input) * v + Vec2::splat(1.)) * cell_size / 2. + lower)
+                        .map(|u| macroquad::models::Vertex {
+                            position: u.extend(0.),
+                            uv: u,
+                            color: in_color,
+                        })
+                        .collect(),
+                    triangulation,
+                )
+            });
+
+            draw_mesh(&Mesh {
+                vertices,
+                indices,
+                texture: None,
+            })
         }
 
         for instr in self.draw_instructions(matrix, dims, location) {
