@@ -1,7 +1,6 @@
 use std::ops::Index;
 
 use itertools::Itertools;
-//Current shapes package can't do arbitrary polygons?
 use macroquad::prelude::*;
 
 fn positive_angle(u: Vec2, v: Vec2) -> f32 {
@@ -110,15 +109,15 @@ fn triangulate_indices_inner(vertices: &[Vec2], indices: &[u16]) -> Vec<u16> {
         "diagonal stack contains vertices: {:?}",
         diagonal_stack.iter().map(|(a, _)| a).collect_vec()
     );
-    let mut products: Vec<Vec<u16>> = vec![];
-    for (ix, jx) in diagonal_stack.iter().map(|(ix, _)| *ix).tuple_windows() {
-        let mut res = indices[ix..=jx].to_vec();
-        res.push(indices[0]);
-        products.push(res);
-    }
-    log::trace!("calculated subpolygons: {products:?}");
-    products
-        .into_iter()
+    diagonal_stack
+        .iter()
+        .tuple_windows()
+        .map(|(&(ix, _), &(jx, _))| {
+            let mut res = indices[ix..=jx].to_vec();
+            res.push(indices[0]);
+            log::trace!("found subpolygon: {res:?}");
+            res
+        })
         .flat_map(|indices| triangulate_indices_inner(vertices, indices.as_slice()))
         .collect()
 }
