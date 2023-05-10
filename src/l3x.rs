@@ -506,7 +506,6 @@ impl L3X {
         ];
         let out_arrow_triangles = triangulate(out_arrow_vertices.clone());
         let out_arrow_triangulation = triangulate_indices(&out_arrow_vertices);
-        log::debug!("out_arrow_triangulation: {out_arrow_triangulation:?}");
         let in_arrow_triangles: Vec<[Vec2; 3]> = triangulate(in_arrow_vertices);
         let through_triangles = triangulate(through_vertices);
         for output in outputs {
