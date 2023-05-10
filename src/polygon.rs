@@ -1,49 +1,51 @@
-use std::f32::consts::PI;
-
+use itertools::Itertools;
 //Current shapes package can't do arbitrary polygons?
 use macroquad::prelude::*;
 
 fn positive_angle(u: Vec2, v: Vec2) -> f32 {
-    let res = u.angle_between(v);
-    if res >= 0. {
-        res
-    } else {
-        2. * PI + res
-    }
+    u.angle_between(v).rem_euclid(std::f32::consts::TAU)
 }
 pub fn triangulate(pts: Vec<Vec2>) -> Vec<[Vec2; 3]> {
+    assert!(pts.len() >= 3, "Attempted triangulation of something with less than tri vertices");
     if pts.len() == 3 {
         return vec![[pts[0], pts[1], pts[2]]];
     }
+
+    // vec between vertex indices (?) and the angle they make with the line created by the focus
+    // vertex and the vertex which comes after it
     let mut diagonal_stack = vec![(1, 0.)];
+
     let mut angle = 0.;
-    for i in 2..pts.len() {
-        let leading_angle = diagonal_stack.last().unwrap().1;
-        let visible = angle == leading_angle;
-        angle += (pts[i - 1] - pts[0]).angle_between(pts[i] - pts[0]);
-        //println!("{}", angle);
-        if visible
-            && positive_angle(pts[0] - pts[i - 1], pts[i] - pts[i - 1])
-                < positive_angle(pts[0] - pts[i - 1], pts[i - 2] - pts[i - 1])
+    let mut prior_was_visible = true;
+    let focus = pts[0];
+    for (ix, (&name_later, &prior, &current)) in pts.iter().tuple_windows().enumerate() {
+        angle += (prior - focus).angle_between(current - focus);
+        if prior_was_visible
+            && positive_angle(focus - prior, current - prior)
+                < positive_angle(focus - prior, name_later - prior)
         {
-            //cuts previous diagonal
+            // cull occluded diagonals
             diagonal_stack.pop();
             while angle < diagonal_stack.last().unwrap().1
-                && (pts[i] - pts[i - 1])
-                    .angle_between(pts[diagonal_stack.last().unwrap().0] - pts[i - 1])
-                    > 0.
+                && (current - prior)
+                    .angle_between(pts[diagonal_stack.last().unwrap().0] - prior)
+                    .is_sign_positive()
             {
                 diagonal_stack.pop();
             }
         }
         let leading_angle = diagonal_stack.last().unwrap().1;
         if angle > leading_angle {
-            diagonal_stack.push((i, angle));
+            diagonal_stack.push((ix + 2, angle));
+            prior_was_visible = true;
+        } else {
+            prior_was_visible = false;
         }
     }
-    /*for t in &diagonal_stack {
-        println!("{}", t.0);
-    }*/
+    log::trace!(
+        "diagonal stack contains vertices: {:?}",
+        diagonal_stack.iter().map(|(a, _)| a)
+    );
     let mut products: Vec<Vec<Vec2>> = vec![];
     for (i, (index, _)) in diagonal_stack[..diagonal_stack.len() - 1]
         .iter()
@@ -53,12 +55,7 @@ pub fn triangulate(pts: Vec<Vec2>) -> Vec<[Vec2; 3]> {
         res.push(pts[0]);
         products.push(res);
     }
-    /*for l in &products {
-        for v in l {
-            println!("{}", v);
-        }
-        println!();
-    }*/
+    log::trace!("calculated subpolygons: {products:?}");
     products.into_iter().flat_map(triangulate).collect()
 }
 pub fn draw_polygon(pts: Vec<Vec2>, color: Color) {
