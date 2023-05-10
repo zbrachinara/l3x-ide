@@ -233,6 +233,13 @@ impl Matrix {
         }
     }
 
+    fn ui_edit_matrix(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            // ui.label("Gridlines");
+            ui.checkbox(&mut self.gridlines, "Gridlines")
+        });
+    }
+
     #[cfg(not(target_arch = "wasm32"))]
     fn ui_import(&mut self, ui: &mut Ui, executor: &mut async_executor::LocalExecutor) {
         ui.horizontal(|ui| {
@@ -281,6 +288,11 @@ impl Matrix {
                 self.stream_input.ui(ui, self.simulating)
             });
         }
+
+        ui.separator();
+        ui.collapsing_open("Matrix editing", |ui| {
+            self.ui_edit_matrix(ui)
+        });
 
         if let Some(location) = self.selecting {
             ui.separator();

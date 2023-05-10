@@ -76,6 +76,7 @@ pub struct Matrix {
     stream_input: UiStreamInput,
 
     simulating: bool,
+    gridlines: bool,
 
     // rust async moments
     #[cfg(not(target_arch = "wasm32"))]
@@ -101,6 +102,7 @@ impl Default for Matrix {
             single_input: Default::default(),
             stream_input: Default::default(),
             simulating: false,
+            gridlines: false,
             #[cfg(not(target_arch = "wasm32"))]
             future_states: Default::default(),
             time: 0,
@@ -163,21 +165,22 @@ impl Matrix {
                 offset.y,
                 self.dims.x as f32 * cell_size,
                 self.dims.y as f32 * cell_size,
-                2.0,
+                4.0,
                 primary_color,
             )
         }
 
-        // draw gridlines
-        for column in 1..self.dims.x {
-            let lower = vec2(column as f32, 0.) * cell_size + offset;
-            let upper = lower + vec2(0., self.dims.y as f32) * cell_size;
-            //draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, primary_color)
-        }
-        for row in 1..self.dims.y {
-            let lower = vec2(0., row as f32) * cell_size + offset;
-            let upper = lower + vec2(self.dims.x as f32, 0.) * cell_size;
-            //draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, primary_color)
+        if self.gridlines {
+            for column in 1..self.dims.x {
+                let lower = vec2(column as f32, 0.) * cell_size + offset;
+                let upper = lower + vec2(0., self.dims.y as f32) * cell_size;
+                draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, primary_color)
+            }
+            for row in 1..self.dims.y {
+                let lower = vec2(0., row as f32) * cell_size + offset;
+                let upper = lower + vec2(self.dims.x as f32, 0.) * cell_size;
+                draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, primary_color)
+            }
         }
 
         for (location, instruction) in &self.instructions {
