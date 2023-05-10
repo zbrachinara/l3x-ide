@@ -80,9 +80,10 @@ pub fn triangulate(pts: Vec<Vec2>) -> Vec<[Vec2; 3]> {
             diagonal_stack.push((ix + 2, angle));
         }
     }
-    /*for t in &diagonal_stack {
-        println!("{}", t.0);
-    }*/
+    log::trace!(
+        "diagonal stack contains vertices: {:?}",
+        diagonal_stack.iter().map(|(a, _)| a)
+    );
     let mut products: Vec<Vec<Vec2>> = vec![];
     for (i, (index, _)) in diagonal_stack[..diagonal_stack.len() - 1]
         .iter()
@@ -92,12 +93,7 @@ pub fn triangulate(pts: Vec<Vec2>) -> Vec<[Vec2; 3]> {
         res.push(pts[0]);
         products.push(res);
     }
-    /*for l in &products {
-        for v in l {
-            println!("{}", v);
-        }
-        println!();
-    }*/
+    log::trace!("calculated subpolygons: {products:?}");
     products.into_iter().flat_map(triangulate).collect()
 }
 pub fn draw_polygon(pts: Vec<Vec2>, color: Color) {
