@@ -239,7 +239,23 @@ impl Matrix {
     }
 
     pub fn transpose(&mut self) {
+        self.dims = self.dims.yx();
+        let instructions_new: HashMap<_, _> = self
+            .instructions
+            .drain()
+            .map(|(mut k, mut v)| {
+                k = k.yx();
+                v.direction = match v.direction {
+                    Direction::Up => Direction::Left,
+                    Direction::Down => Direction::Right,
+                    Direction::Left => Direction::Up,
+                    Direction::Right => Direction::Down,
+                };
 
+                (k, v)
+            })
+            .collect();
+        self.instructions = instructions_new;
     }
 
     pub fn stop_edit(&mut self) {
@@ -260,7 +276,11 @@ impl Matrix {
     }
 
     fn init_simulation(&mut self) {
-        self.simulating = self.init_simulation_inner().is_some()
+        if self.instructions[&ivec2(1, 0)].command == L3XCommand::Queue {
+            self.simulating = self.init_simulation_inner().is_some()
+        } else {
+            log::warn!("Could not start simulation: There is no queue on the queue input square!");
+        }
     }
 
     fn cleanup_simulation(&mut self) {
