@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 use itertools::Itertools;
 //Current shapes package can't do arbitrary polygons?
 use macroquad::prelude::*;
@@ -39,12 +37,7 @@ pub fn triangulate(pts: &[Vec2])->Vec<[Vec2;3]>{
     triangulate_helper(pts[0], &pts[1..])
 }*/
 fn positive_angle(u: Vec2, v: Vec2) -> f32 {
-    let res = u.angle_between(v);
-    if res >= 0. {
-        res
-    } else {
-        2. * PI + res
-    }
+    u.angle_between(v).rem_euclid(std::f32::consts::TAU)
 }
 pub fn triangulate(pts: Vec<Vec2>) -> Vec<[Vec2; 3]> {
     if pts.len() == 3 {
