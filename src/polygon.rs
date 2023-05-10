@@ -14,16 +14,6 @@ struct IndexedSlice<'a, T> {
 }
 
 impl<'a, T> IndexedSlice<'a, T> {
-    fn get_with_index(&self, ix: usize) -> Option<(u16, &T)> {
-        self.indices
-            .get(ix)
-            .and_then(|ix| self.slice.get(*ix as usize).map(|elem| (*ix, elem)))
-    }
-
-    fn get(&self, ix: usize) -> Option<&T> {
-        self.get_with_index(ix).map(|(_, e)| e)
-    }
-
     fn iter(&self) -> impl Iterator<Item = (u16, &'a T)> {
         self.indices
             .iter()
@@ -39,7 +29,7 @@ impl<'a, T> Index<usize> for IndexedSlice<'a, T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        self.get(index).unwrap()
+        &self.slice[self.indices[index] as usize]
     }
 }
 
