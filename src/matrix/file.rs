@@ -89,7 +89,7 @@ impl Matrix {
 
         for (loc @ &IVec2 { x, y }, item) in &self.instructions {
             if loc.cmplt(self.dims.as_ivec2()).all() {
-                arr[(x as usize, y as usize)] = Cow::Owned(item.to_string());
+                arr[(y as usize, x as usize)] = Cow::Owned(item.to_string());
             }
         }
 
