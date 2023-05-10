@@ -238,6 +238,10 @@ impl Matrix {
         }
     }
 
+    pub fn transpose(&mut self) {
+
+    }
+
     pub fn stop_edit(&mut self) {
         self.selecting = None;
     }

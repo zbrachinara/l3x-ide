@@ -234,10 +234,10 @@ impl Matrix {
     }
 
     fn ui_edit_matrix(&mut self, ui: &mut Ui) {
-        ui.horizontal(|ui| {
-            // ui.label("Gridlines");
-            ui.checkbox(&mut self.gridlines, "Gridlines")
-        });
+        ui.checkbox(&mut self.gridlines, "Gridlines");
+        if ui.button("transpose").clicked() {
+            self.transpose();
+        }
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -290,9 +290,7 @@ impl Matrix {
         }
 
         ui.separator();
-        ui.collapsing_open("Matrix editing", |ui| {
-            self.ui_edit_matrix(ui)
-        });
+        ui.collapsing_open("Matrix editing", |ui| self.ui_edit_matrix(ui));
 
         if let Some(location) = self.selecting {
             ui.separator();
