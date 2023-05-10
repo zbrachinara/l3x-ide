@@ -49,12 +49,11 @@ pub fn triangulate(pts: Vec<Vec2>) -> Vec<[Vec2; 3]> {
     let mut diagonal_stack = vec![(1, 0.)];
 
     let mut angle = 0.;
+    let mut prior_was_visible = true;
     let focus = pts[0];
     for (ix, (&name_later, &prior, &current)) in pts.iter().tuple_windows().enumerate() {
-        let leading_angle = diagonal_stack.last().unwrap().1;
-        let visible = angle == leading_angle; // hack -- measuring the side effect of a previous loop state mutation
         angle += (prior - focus).angle_between(current - focus);
-        if visible
+        if prior_was_visible
             && positive_angle(focus - prior, current - prior)
                 < positive_angle(focus - prior, name_later - prior)
         {
@@ -71,6 +70,9 @@ pub fn triangulate(pts: Vec<Vec2>) -> Vec<[Vec2; 3]> {
         let leading_angle = diagonal_stack.last().unwrap().1;
         if angle > leading_angle {
             diagonal_stack.push((ix + 2, angle));
+            prior_was_visible = true;
+        } else {
+            prior_was_visible = false;
         }
     }
     log::trace!(
