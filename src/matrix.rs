@@ -256,6 +256,9 @@ impl Matrix {
             })
             .collect();
         self.instructions = instructions_new;
+        if let Some(selecting) = self.selecting {
+            self.edit(selecting.yx())
+        }
     }
 
     pub fn stop_edit(&mut self) {
