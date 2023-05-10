@@ -40,6 +40,7 @@ fn positive_angle(u: Vec2, v: Vec2) -> f32 {
     u.angle_between(v).rem_euclid(std::f32::consts::TAU)
 }
 pub fn triangulate(pts: Vec<Vec2>) -> Vec<[Vec2; 3]> {
+    assert!(pts.len() >= 3, "Attempted triangulation of something with less than tri vertices");
     if pts.len() == 3 {
         return vec![[pts[0], pts[1], pts[2]]];
     }
