@@ -5,9 +5,9 @@ use smallvec::{smallvec, SmallVec};
 use std::collections::{HashMap, HashSet, VecDeque};
 use vec_drain_where::VecDrainWhereExt;
 
+mod file;
 #[cfg(not(target_arch = "wasm32"))]
 mod future_states;
-mod file;
 mod ui;
 
 use crate::{
@@ -155,13 +155,26 @@ impl Matrix {
                 draw_rectangle(lower.x, lower.y, cell_size, cell_size, LIGHTGRAY);
             }
         }
+
+        // box around the matrix
+        {
+            draw_rectangle_lines(
+                offset.x,
+                offset.y,
+                self.dims.x as f32 * cell_size,
+                self.dims.y as f32 * cell_size,
+                2.0,
+                primary_color,
+            )
+        }
+
         // draw gridlines
-        for column in 0..=self.dims.x {
+        for column in 1..self.dims.x {
             let lower = vec2(column as f32, 0.) * cell_size + offset;
             let upper = lower + vec2(0., self.dims.y as f32) * cell_size;
             //draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, primary_color)
         }
-        for row in 0..=self.dims.y {
+        for row in 1..self.dims.y {
             let lower = vec2(0., row as f32) * cell_size + offset;
             let upper = lower + vec2(self.dims.x as f32, 0.) * cell_size;
             //draw_line(lower.x, lower.y, upper.x, upper.y, 2.0, primary_color)
