@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
 use arrayvec::ArrayVec;
+use itertools::Itertools;
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
 use strum::IntoEnumIterator;
 
-use crate::polygon::{draw_triangulation, triangulate};
+use crate::polygon::{draw_triangulation, triangulate, triangulate_indices};
 use crate::registers::Registers;
 
 macro_rules! arrayvec {
@@ -503,7 +504,9 @@ impl L3X {
             vec2(0.2, -0.2),
             vec2(0.3, -0.2),
         ];
-        let out_arrow_triangles = triangulate(out_arrow_vertices);
+        let out_arrow_triangles = triangulate(out_arrow_vertices.clone());
+        let out_arrow_triangulation = triangulate_indices(&out_arrow_vertices);
+        log::debug!("out_arrow_triangulation: {out_arrow_triangulation:?}");
         let in_arrow_triangles: Vec<[Vec2; 3]> = triangulate(in_arrow_vertices);
         let through_triangles = triangulate(through_vertices);
         for output in outputs {
@@ -514,30 +517,23 @@ impl L3X {
             } else {
                 minor_color
             };
-            /*let triangle_vertices = triangle_vertices.map(|v| {
-                    (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower
-                });
-                draw_triangle(
-                    triangle_vertices[0],
-                    triangle_vertices[1],
-                    triangle_vertices[2],
-                    color,
-                );
-
-                let rectangle_vertices = rectangle_vertices
-                    .map(|v| (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower );
-                draw_rectangle(rectangle_vertices[0].x, rectangle_vertices[0].y, rectangle_vertices[1].x-rectangle_vertices[0].x, rectangle_vertices[1].y-rectangle_vertices[0].y, color);
-            */
-            let arrow_triangles = out_arrow_triangles
+            let vertices = out_arrow_vertices
                 .iter()
-                .map(|t| {
-                    t.map(|v| {
-                        (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2.
-                            + lower
-                    })
+                .map(|&v| {
+                    (Mat2::from(output.direction()) * v + Vec2::splat(1.)) * cell_size / 2. + lower
                 })
-                .collect();
-            draw_triangulation(arrow_triangles, out_color);
+                .map(|u| macroquad::models::Vertex {
+                    position: u.extend(0.),
+                    uv: u,
+                    color: out_color,
+                })
+                .collect_vec();
+
+            draw_mesh(&Mesh {
+                vertices,
+                indices: out_arrow_triangulation.clone(),
+                texture: None,
+            });
         }
         for input in inputs {
             let in_color = if self.is_one() {
