@@ -31,6 +31,7 @@ vec-drain-where = "1.0"
 if_chain = "1.0"
 strum = "0.24"
 strum_macros = "0.24"
+const-push = { git = "https://github.com/zbrachinara/const-push", default-features = false}
 
 num-bigint = "0.4"
 num-prime = "0.4"

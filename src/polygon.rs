@@ -1,5 +1,6 @@
 use std::ops::Index;
 
+use const_push::ConstVec;
 use itertools::Itertools;
 use macroquad::prelude::*;
 
@@ -31,6 +32,22 @@ impl<'a, T> Index<usize> for IndexedSlice<'a, T> {
     fn index(&self, index: usize) -> &Self::Output {
         &self.slice[self.indices[index] as usize]
     }
+}
+
+const fn const_triangulate_indices_inner<const N: usize>(vertices: &[Vec2], indices: &[u16])-> ConstVec<u16,N> {
+    assert!(
+        indices.len() >= 3,
+        "Triangulation produced a low (<3) number of indices"
+    );
+    assert!(
+        vertices.len() >= 3,
+        "Attempted triangulation of something with less than tri vertices"
+    );
+
+    // if indices.len() == 3 {
+    //     return indices.to_vec();
+    // }
+    todo!()
 }
 
 pub fn triangulate_indices(vertices: &[Vec2]) -> Vec<u16> {
