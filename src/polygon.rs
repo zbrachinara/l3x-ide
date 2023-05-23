@@ -42,7 +42,7 @@ pub fn triangulate_indices(vertices: &[Vec2]) -> Vec<u16> {
 }
 
 fn triangulate_indices_inner(vertices: &[Vec2], indices: &[u16]) -> Vec<u16> {
-    log::trace!("running an iteration of index-based trinagulation");
+    log::trace!("running an iteration of index-based triangulation");
     assert!(
         indices.len() >= 3,
         "Triangulation produced a low (<3) number of indices: {indices:?}"
