@@ -203,18 +203,21 @@ impl Matrix {
         }
     }
 
-    pub fn update_sound(&self, logical_mouse: Vec2) -> Chord {
-        let travelers = self
+    pub fn update_sound(&self, logical_mouse: Vec2) -> Option<Chord> {
+        if let Some((traveler, distance)) = self
             .travelers
             .iter()
             .map(|traveler| {
                 let dist = traveler.location.as_vec2().distance(logical_mouse);
                 (traveler, dist)
             })
-            .filter(|(_, dist)| *dist < 1.0)
-            .inspect(|u| println!("{u:?}"));
+            .filter(|(_, dist)| *dist < 1.5)
+            .min_by_key(|(_, dist)| (dist * 1000.) as usize)
+        {
 
-        Chord::default()
+        }
+
+        None
     }
 
     /// Forces the streaming input square to be a queue when the matrix is in l3x mode

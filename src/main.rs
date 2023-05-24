@@ -106,7 +106,9 @@ async fn main() {
             state.matrix.stop_edit();
         }
 
-        state.output_interface.update(state.matrix.update_sound(logical)).unwrap();
+        if let Some(chord) = state.matrix.update_sound(logical) {
+            state.output_interface.update(chord).unwrap();
+        }
 
         let mut egui_hovered = false;
         egui_macroquad::ui(|ctx| {
