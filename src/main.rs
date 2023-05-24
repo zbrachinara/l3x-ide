@@ -32,6 +32,7 @@ struct Model {
     #[allow(unused)] // needs to exist so that the sound thread is allowed to live
     output: OutputStream,
     output_interface: Updater<Chord>,
+    sound_needs_killing: bool,
 }
 
 impl Default for Model {
@@ -48,6 +49,7 @@ impl Default for Model {
             scale: 1.0,
             output_interface,
             output,
+            sound_needs_killing: false,
         }
     }
 }
@@ -107,7 +109,11 @@ async fn main() {
         }
 
         if let Some(chord) = state.matrix.update_sound(logical) {
+            state.sound_needs_killing = true;
             state.output_interface.update(chord).unwrap();
+        } else if state.sound_needs_killing {
+            state.sound_needs_killing = false;
+            state.output_interface.update(Chord::default()).unwrap()
         }
 
         let mut egui_hovered = false;
