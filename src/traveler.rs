@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use macroquad::prelude::*;
 
-use crate::{l3x::Direction, registers::Registers};
+use crate::{l3x::Direction, registers::Registers, sound::TwelveTonePitch};
 
 #[derive(Clone, Debug)]
 pub struct Traveler {
@@ -30,6 +30,10 @@ impl Traveler {
     pub fn step(mut self) -> Self {
         self.location += IVec2::from(self.direction);
         self
+    }
+
+    pub fn pitches(&self) -> Vec<TwelveTonePitch> {
+        todo!()
     }
 }
 
