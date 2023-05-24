@@ -16,8 +16,8 @@ async-executor = "1.5"
 futures-lite = "1.13"
 
 [dependencies]
-macroquad = "0.3"
-egui-macroquad = "0.15"
+macroquad = { version = "0.3", default-features = false }
+egui-macroquad = { version = "0.15", default-features = false }
 egui = "0.21"
 
 log = "0.4"
@@ -32,6 +32,10 @@ if_chain = "1.0"
 strum = "0.24"
 strum_macros = "0.24"
 const-push = { git = "https://github.com/zbrachinara/const-push", default-features = false}
+
+# TODO test with web app
+rodio = "0.17"
+crossbeam = "0.8"
 
 num-bigint = "0.4"
 num-prime = "0.4"
