@@ -1,6 +1,7 @@
 use rodio::Source;
+use single_value_channel::Receiver;
 
-use std::{sync::mpsc::Receiver, time::Duration};
+use std::time::Duration;
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Default, Debug)]
@@ -89,28 +90,29 @@ impl From<u32> for PlayState {
     }
 }
 
-struct Chord<const N: usize> {
-    pitches: [TwelveTonePitch; N],
+struct Signal {
+    receiver: Receiver<Vec<TwelveTonePitch>>,
     state: PlayState,
 }
 
-impl<const N: usize> Iterator for Chord<N> {
+impl Iterator for Signal {
     type Item = f32;
 
     fn next(&mut self) -> Option<Self::Item> {
         let time = self.state.advance();
+        let latest = self.receiver.latest();
         Some(
-            self.pitches
+            latest
                 .iter()
                 .copied()
                 .map(|u| (u.hz() * time).sin())
                 .sum::<f32>()
-                / (N as f32),
+                / (latest.len() as f32),
         )
     }
 }
 
-impl<const N: usize> Source for Chord<N> {
+impl Source for Signal {
     fn current_frame_len(&self) -> Option<usize> {
         None
     }
