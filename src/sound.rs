@@ -77,6 +77,10 @@ impl PlayState {
         if self.samples_passed > self.sample_rate {
             self.samples_passed = 0;
         }
+        self.time()
+    }
+
+    fn time(&self) -> f32 {
         (self.samples_passed as f32) / (self.sample_rate as f32) * std::f32::consts::TAU
     }
 }
@@ -90,8 +94,25 @@ impl From<u32> for PlayState {
     }
 }
 
+struct Chord {
+    pitches: Vec<TwelveTonePitch>,
+    volume: f32,
+}
+
+impl Chord {
+    fn play_with_state(&self, state: &PlayState) -> f32 {
+        self.pitches
+            .iter()
+            .copied()
+            .map(|u| (u.hz() * state.time()).sin())
+            .sum::<f32>()
+            / (self.pitches.len() as f32)
+            * self.volume
+    }
+}
+
 struct Signal {
-    receiver: Receiver<Vec<TwelveTonePitch>>,
+    receiver: Receiver<Chord>,
     state: PlayState,
 }
 
@@ -99,16 +120,8 @@ impl Iterator for Signal {
     type Item = f32;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let time = self.state.advance();
-        let latest = self.receiver.latest();
-        Some(
-            latest
-                .iter()
-                .copied()
-                .map(|u| (u.hz() * time).sin())
-                .sum::<f32>()
-                / (latest.len() as f32),
-        )
+        self.state.advance();
+        Some(self.receiver.latest().play_with_state(&self.state))
     }
 }
 
