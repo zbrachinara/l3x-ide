@@ -3,18 +3,21 @@
 use egui::Align2;
 use macroquad::prelude::*;
 use macroquad::window::next_frame;
+use rodio::OutputStream;
+use single_value_channel::Updater;
+use sound::Chord;
 
 use crate::input::InputDriver;
 use crate::matrix::Matrix;
 
-mod sound;
 mod input;
 mod l3x;
 mod matrix;
+mod polygon;
+mod registers;
+mod sound;
 mod swapbuffer;
 mod traveler;
-mod registers;
-mod polygon;
 #[cfg(target_arch = "wasm32")]
 mod wasm_log;
 
@@ -26,15 +29,25 @@ struct Model {
     offset: Vec2,
     scale: f32,
     input_driver: InputDriver,
+    #[allow(unused)] // needs to exist so that the sound thread is allowed to live
+    output: OutputStream,
+    output_interface: Updater<Chord>,
 }
 
 impl Default for Model {
     fn default() -> Self {
+        let (output, output_handle) = OutputStream::try_default().unwrap();
+        let (output_interface, signals) = sound::pitch_signals();
+        output_handle
+            .play_raw(signals)
+            .expect("Could not begin sound engine");
         Self {
             matrix: Default::default(),
             input_driver: Default::default(),
             offset: Vec2::splat(100.0),
             scale: 1.0,
+            output_interface,
+            output,
         }
     }
 }

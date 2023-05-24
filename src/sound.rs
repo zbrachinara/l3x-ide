@@ -1,12 +1,12 @@
 use rodio::Source;
-use single_value_channel::Receiver;
+use single_value_channel::{Receiver, Updater};
 
 use std::time::Duration;
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Default, Debug)]
 #[repr(u8)]
-enum TwelveTone {
+pub enum TwelveTone {
     #[default]
     CNat = 0,
     CSharp = 1,
@@ -51,9 +51,9 @@ impl TwelveTone {
 }
 
 #[derive(Clone, Copy, Default, Debug)]
-struct TwelveTonePitch {
-    tone: TwelveTone,
-    octave: i8,
+pub struct TwelveTonePitch {
+    pub tone: TwelveTone,
+    pub octave: i8,
 }
 
 impl TwelveTonePitch {
@@ -94,9 +94,10 @@ impl From<u32> for PlayState {
     }
 }
 
-struct Chord {
-    pitches: Vec<TwelveTonePitch>,
-    volume: f32,
+#[derive(Default)]
+pub struct Chord {
+    pub pitches: Vec<TwelveTonePitch>,
+    pub volume: f32,
 }
 
 impl Chord {
@@ -111,7 +112,7 @@ impl Chord {
     }
 }
 
-struct Signal {
+pub struct Signal {
     receiver: Receiver<Chord>,
     state: PlayState,
 }
@@ -141,4 +142,13 @@ impl Source for Signal {
     fn total_duration(&self) -> Option<Duration> {
         None
     }
+}
+
+pub fn pitch_signals() -> (Updater<Chord>, Signal) {
+    let (receiver, sender) = single_value_channel::channel_starting_with(Default::default());
+    let signal = Signal {
+        receiver,
+        state: Default::default(),
+    };
+    (sender, signal)
 }
