@@ -7,6 +7,7 @@ use macroquad::window::next_frame;
 use crate::input::InputDriver;
 use crate::matrix::Matrix;
 
+mod sound;
 mod input;
 mod l3x;
 mod matrix;
