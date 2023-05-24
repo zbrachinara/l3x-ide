@@ -1,9 +1,25 @@
-use std::fmt::Display;
 use macroquad::prelude::*;
+use std::fmt::Display;
 
-use crate::{l3x::Direction, registers::Registers, sound::{TwelveTonePitch, TwelveToneNote}};
+use crate::{
+    l3x::Direction,
+    registers::Registers,
+    sound::{TwelveToneNote, TwelveTonePitch},
+};
 
-const PITCHES: [TwelveTonePitch;0] = [];
+const PITCHES: &[TwelveTonePitch] = {
+    use crate::sound::TwelveTone::*;
+    &[
+        TwelveTonePitch {
+            tone: CNat,
+            octave: 4,
+        },
+        TwelveTonePitch {
+            tone: GNat,
+            octave: 4,
+        },
+    ]
+};
 
 #[derive(Clone, Debug)]
 pub struct Traveler {
@@ -35,7 +51,12 @@ impl Traveler {
     }
 
     pub fn pitches(&self) -> Vec<TwelveToneNote> {
-        todo!()
+        self.value
+            .0
+            .iter()
+            .zip(PITCHES)
+            .map(|(&(_, magnitude), &pitch)| pitch.vol(magnitude as f32))
+            .collect()
     }
 }
 

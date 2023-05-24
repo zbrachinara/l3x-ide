@@ -60,6 +60,13 @@ impl TwelveTonePitch {
     fn hz(self) -> f32 {
         self.tone.hz_at_zero() * (2f32).powi(self.octave as i32)
     }
+
+    pub fn vol(self, volume: f32) -> TwelveToneNote {
+        TwelveToneNote {
+            pitch: self,
+            volume,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Default, Debug)]
@@ -129,7 +136,6 @@ impl Chord {
             .reduce(|(wv, vol), (wv_new, vol_new)| (wv + wv_new, vol + vol_new))
             .map(|(wv, vol)| wv / vol)
             .unwrap_or(0.0)
-            / (self.pitches.len() as f32)
             * self.volume
     }
 }

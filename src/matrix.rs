@@ -213,7 +213,7 @@ impl Matrix {
             .filter(|(_, dist)| *dist < 1.5)
             .min_by_key(|(_, dist)| (dist * 1000.) as usize)
             .map(|(traveler, distance)| {
-                let volume = (1. - (distance - 0.5).clamp(0.0, 1.0)).min(0.);
+                let volume = dbg!((1. - (distance - 0.5).clamp(0.0, 1.0)).max(0.));
                 Chord {
                     volume,
                     pitches: traveler.pitches(),
