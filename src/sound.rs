@@ -62,6 +62,18 @@ impl TwelveTonePitch {
     }
 }
 
+#[derive(Clone, Copy, Default, Debug)]
+pub struct TwelveToneNote {
+    pitch: TwelveTonePitch,
+    volume: f32,
+}
+
+impl TwelveToneNote {
+    fn hz(&self) -> f32 {
+        self.pitch.hz() * self.volume
+    }
+}
+
 struct PlayState {
     samples_passed: u32,
     sample_rate: u32,
@@ -104,7 +116,7 @@ impl From<u32> for PlayState {
 
 #[derive(Default)]
 pub struct Chord {
-    pub pitches: Vec<TwelveTonePitch>,
+    pub pitches: Vec<TwelveToneNote>,
     pub volume: f32,
 }
 
@@ -113,8 +125,10 @@ impl Chord {
         self.pitches
             .iter()
             .copied()
-            .map(|u| (u.hz() * state.time()).sin())
-            .sum::<f32>()
+            .map(|u| ((u.hz() * state.time()).sin() * u.volume, u.volume))
+            .reduce(|(wv, vol), (wv_new, vol_new)| (wv + wv_new, vol + vol_new))
+            .map(|(wv, vol)| wv / vol)
+            .unwrap_or(0.0)
             / (self.pitches.len() as f32)
             * self.volume
     }
