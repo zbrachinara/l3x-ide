@@ -89,12 +89,12 @@ impl From<u32> for PlayState {
     }
 }
 
-struct Composition<const N: usize> {
+struct Chord<const N: usize> {
     pitches: [TwelveTonePitch; N],
     state: PlayState,
 }
 
-impl<const N: usize> Iterator for Composition<N> {
+impl<const N: usize> Iterator for Chord<N> {
     type Item = f32;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -110,7 +110,7 @@ impl<const N: usize> Iterator for Composition<N> {
     }
 }
 
-impl<const N: usize> Source for Composition<N> {
+impl<const N: usize> Source for Chord<N> {
     fn current_frame_len(&self) -> Option<usize> {
         None
     }
@@ -124,42 +124,6 @@ impl<const N: usize> Source for Composition<N> {
     }
 
     fn total_duration(&self) -> Option<Duration> {
-        None
-    }
-}
-
-struct PureSound {
-    samples_passed: u32,
-    sample_rate: u32,
-    frequency: f32,
-}
-
-impl Iterator for PureSound {
-    type Item = f32;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.samples_passed = self.samples_passed.wrapping_add(1);
-        Some(f32::sin(
-            self.samples_passed as f32 * std::f32::consts::TAU * self.frequency
-                / (self.sample_rate as f32),
-        ))
-    }
-}
-
-impl Source for PureSound {
-    fn current_frame_len(&self) -> Option<usize> {
-        None
-    }
-
-    fn channels(&self) -> u16 {
-        1
-    }
-
-    fn sample_rate(&self) -> u32 {
-        self.sample_rate
-    }
-
-    fn total_duration(&self) -> Option<std::time::Duration> {
         None
     }
 }
