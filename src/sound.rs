@@ -62,10 +62,18 @@ impl TwelveTonePitch {
     }
 }
 
-#[derive(Default)]
 struct PlayState {
     samples_passed: u32,
     sample_rate: u32,
+}
+
+impl Default for PlayState {
+    fn default() -> Self {
+        Self {
+            samples_passed: Default::default(),
+            sample_rate: 5000,
+        }
+    }
 }
 
 impl PlayState {
