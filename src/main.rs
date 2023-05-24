@@ -106,6 +106,8 @@ async fn main() {
             state.matrix.stop_edit();
         }
 
+        state.output_interface.update(state.matrix.update_sound(logical)).unwrap();
+
         let mut egui_hovered = false;
         egui_macroquad::ui(|ctx| {
             egui_hovered = ctx.is_pointer_over_area();

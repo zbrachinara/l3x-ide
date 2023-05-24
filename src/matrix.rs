@@ -13,6 +13,7 @@ mod ui;
 use crate::{
     l3x::{Direction, L3XCommand, L3X},
     registers::Registers,
+    sound::Chord,
     swapbuffer::SwapBuffer,
     traveler::Traveler,
 };
@@ -200,6 +201,20 @@ impl Matrix {
             let pos = (traveler.location.as_vec2() + Vec2::splat(0.5)) * cell_size + offset;
             draw_circle(pos.x, pos.y, 10.0 * scale, BLUE);
         }
+    }
+
+    pub fn update_sound(&self, logical_mouse: Vec2) -> Chord {
+        let travelers = self
+            .travelers
+            .iter()
+            .map(|traveler| {
+                let dist = traveler.location.as_vec2().distance(logical_mouse);
+                (traveler, dist)
+            })
+            .filter(|(_, dist)| *dist < 1.0)
+            .inspect(|u| println!("{u:?}"));
+
+        Chord::default()
     }
 
     /// Forces the streaming input square to be a queue when the matrix is in l3x mode
