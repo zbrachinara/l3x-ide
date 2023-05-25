@@ -103,7 +103,6 @@ impl Traveler {
                 }
             }
         }
-        log::debug!("{v:?}");
         v
     }
 }
