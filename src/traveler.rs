@@ -24,6 +24,20 @@ const PITCHES: &[(u64, TwelveTonePitch)] = {
                 octave: 4,
             },
         ),
+        (
+            5,
+            TwelveTonePitch {
+                tone: BNat,
+                octave: 4,
+            },
+        ),
+        (
+            7,
+            TwelveTonePitch {
+                tone: DNat,
+                octave: 5,
+            },
+        ),
     ]
 };
 
