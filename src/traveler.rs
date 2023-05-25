@@ -7,17 +7,23 @@ use crate::{
     sound::{TwelveToneNote, TwelveTonePitch},
 };
 
-const PITCHES: &[TwelveTonePitch] = {
+const PITCHES: &[(u64, TwelveTonePitch)] = {
     use crate::sound::TwelveTone::*;
     &[
-        TwelveTonePitch {
-            tone: CNat,
-            octave: 4,
-        },
-        TwelveTonePitch {
-            tone: GNat,
-            octave: 4,
-        },
+        (
+            2,
+            TwelveTonePitch {
+                tone: CNat,
+                octave: 4,
+            },
+        ),
+        (
+            3,
+            TwelveTonePitch {
+                tone: GNat,
+                octave: 4,
+            },
+        ),
     ]
 };
 
@@ -51,12 +57,19 @@ impl Traveler {
     }
 
     pub fn pitches(&self) -> Vec<TwelveToneNote> {
-        self.value
-            .0
-            .iter()
-            .zip(PITCHES)
-            .map(|(&(_, magnitude), &pitch)| pitch.vol(magnitude as f32))
-            .collect()
+        let mut v = Vec::new();
+        let mut ix = 0;
+        'outer: for &(prime, pitch) in PITCHES {
+            while let Some(&(test_prime, magnitude)) = self.value.0.get(ix) {
+                ix += 1;
+                if prime == test_prime {
+                    v.push(pitch.vol(magnitude as f32));
+                    continue 'outer;
+                }
+            }
+        }
+        log::debug!("{v:?}");
+        v
     }
 }
 
