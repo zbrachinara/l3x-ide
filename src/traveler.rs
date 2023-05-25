@@ -73,8 +73,8 @@ impl Traveler {
     pub fn pitches(&self) -> Vec<TwelveToneNote> {
         let mut v = Vec::new();
         let mut ix = 0;
-        'outer: for &(prime, pitch) in PITCHES {
-            while let Some(&(test_prime, magnitude)) = self.value.0.get(ix) {
+        'outer: for &(test_prime, magnitude) in &self.value.0 {
+            while let Some(&(prime, pitch)) = PITCHES.get(ix) {
                 ix += 1;
                 if prime == test_prime {
                     v.push(pitch.vol(magnitude as f32));
