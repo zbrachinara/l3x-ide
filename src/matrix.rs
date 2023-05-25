@@ -298,7 +298,9 @@ impl Matrix {
     }
 
     fn init_simulation(&mut self) {
-        if self.instructions[&ivec2(1, 0)].command == L3XCommand::Queue {
+        if self.mode == MatrixMode::L3
+            || self.instructions[&ivec2(1, 0)].command == L3XCommand::Queue
+        {
             self.simulating = self.init_simulation_inner().is_some()
         } else {
             log::warn!("Could not start simulation: There is no queue on the queue input square!");
