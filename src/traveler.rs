@@ -8,57 +8,16 @@ use crate::{
 };
 
 const PITCHES: &[(u64, TwelveTonePitch)] = {
-    use crate::sound::TwelveTone::*;
+    use crate::sound::pitch_from_str as p;
     &[
-        (
-            2,
-            TwelveTonePitch {
-                tone: CNat,
-                octave: 4,
-            },
-        ),
-        (
-            3,
-            TwelveTonePitch {
-                tone: GNat,
-                octave: 4,
-            },
-        ),
-        (
-            5,
-            TwelveTonePitch {
-                tone: BNat,
-                octave: 4,
-            },
-        ),
-        (
-            7,
-            TwelveTonePitch {
-                tone: DNat,
-                octave: 5,
-            },
-        ),
-        (
-            11,
-            TwelveTonePitch {
-                tone: FNat,
-                octave: 4,
-            },
-        ),
-        (
-            13,
-            TwelveTonePitch {
-                tone: ANat,
-                octave: 4,
-            },
-        ),
-        (
-            17,
-            TwelveTonePitch {
-                tone: ENat,
-                octave: 5,
-            },
-        ),
+        (2, p("C", 4)),
+        (3, p("G", 4)),
+        (5, p("B", 4)),
+        (7, p("D", 5)),
+        (11, p("F", 4)),
+        (13, p("A", 4)),
+        (17, p("E", 5)),
+        (19, p("G", 5))
     ]
 };
 

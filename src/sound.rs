@@ -2,7 +2,7 @@ use itertools::{EitherOrBoth, Itertools};
 use rodio::Source;
 use single_value_channel::{Receiver, Updater};
 
-use std::{cmp::Ordering, ops::Add, time::Duration, iter::Sum};
+use std::{cmp::Ordering, iter::Sum, ops::Add, time::Duration};
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -28,10 +28,41 @@ impl TwelveTone {
     const CFlat: Self = Self::BNat;
     const DFlat: Self = Self::CSharp;
     const EFlat: Self = Self::DSharp;
+    const ESharp: Self = Self::FNat;
     const FFlat: Self = Self::ENat;
     const GFlat: Self = Self::FSharp;
     const AFlat: Self = Self::GSharp;
     const BFlat: Self = Self::ASharp;
+    const BSharp: Self = Self::CNat;
+
+    #[rustfmt::skip]
+    const fn from_str(s: &str) -> Option<Self> {
+        use const_str::equal as e;
+        match s {
+            u if e!(u, "cb") || e!(u, "Cb") => Some(Self::CFlat),
+            u if e!(u, "c")  || e!(u, "C")  => Some(Self::CNat),
+            u if e!(u, "c#") || e!(u, "C#") => Some(Self::CSharp),
+            u if e!(u, "db") || e!(u, "Db") => Some(Self::DFlat),
+            u if e!(u, "d")  || e!(u, "D")  => Some(Self::DNat),
+            u if e!(u, "d#") || e!(u, "D#") => Some(Self::DSharp),
+            u if e!(u, "eb") || e!(u, "Eb") => Some(Self::EFlat),
+            u if e!(u, "e")  || e!(u, "E")  => Some(Self::ENat),
+            u if e!(u, "e#") || e!(u, "E#") => Some(Self::ESharp),
+            u if e!(u, "fb") || e!(u, "Fb") => Some(Self::FFlat),
+            u if e!(u, "f")  || e!(u, "F")  => Some(Self::FNat),
+            u if e!(u, "f#") || e!(u, "F#") => Some(Self::FSharp),
+            u if e!(u, "gb") || e!(u, "Gb") => Some(Self::GFlat),
+            u if e!(u, "g")  || e!(u, "G")  => Some(Self::GNat),
+            u if e!(u, "g#") || e!(u, "G#") => Some(Self::GSharp),
+            u if e!(u, "ab") || e!(u, "Ab") => Some(Self::AFlat),
+            u if e!(u, "a")  || e!(u, "A")  => Some(Self::ANat),
+            u if e!(u, "a#") || e!(u, "A#") => Some(Self::ASharp),
+            u if e!(u, "bb") || e!(u, "Bb") => Some(Self::BFlat),
+            u if e!(u, "b")  || e!(u, "B")  => Some(Self::BNat),
+            u if e!(u, "b#") || e!(u, "B#") => Some(Self::BSharp),
+            _ => None,
+        }
+    }
 
     fn hz_at_zero(self) -> f32 {
         match self {
@@ -69,6 +100,14 @@ impl PartialOrd for TwelveTonePitch {
 impl Ord for TwelveTonePitch {
     fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap()
+    }
+}
+
+pub const fn pitch_from_str(pitch: &str, octave: i8) -> TwelveTonePitch {
+    if let Some(tone) = TwelveTone::from_str(pitch) {
+        TwelveTonePitch { tone, octave }
+    } else {
+        panic!("Bad pitch")
     }
 }
 

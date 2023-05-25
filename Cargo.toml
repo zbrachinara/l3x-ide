@@ -32,6 +32,7 @@ if_chain = "1.0"
 strum = "0.24"
 strum_macros = "0.24"
 const-push = { git = "https://github.com/zbrachinara/const-push", default-features = false}
+const-str = "0.5"
 
 # TODO test with web app
 rodio = "0.17"
