@@ -210,10 +210,10 @@ impl Matrix {
                 let dist = traveler.location.as_vec2().distance(logical_mouse);
                 (traveler, dist)
             })
-            .filter(|(_, dist)| *dist < 1.5)
+            .filter(|(_, dist)| *dist < 1.5) 
             .min_by_key(|(_, dist)| (dist * 1000.) as usize)
             .map(|(traveler, distance)| {
-                let volume = (1. - (distance - 0.5).clamp(0.0, 1.0)).max(0.);
+                let volume = (distance).clamp(0.0, 1.0);
                 Chord {
                     volume,
                     pitches: traveler.pitches(),

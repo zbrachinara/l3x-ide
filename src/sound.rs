@@ -1,10 +1,11 @@
+use itertools::{EitherOrBoth, Itertools};
 use rodio::Source;
 use single_value_channel::{Receiver, Updater};
 
-use std::time::Duration;
+use std::{cmp::Ordering, ops::Add, time::Duration};
 
 #[allow(dead_code)]
-#[derive(Clone, Copy, Default, Debug)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum TwelveTone {
     #[default]
@@ -50,10 +51,25 @@ impl TwelveTone {
     }
 }
 
-#[derive(Clone, Copy, Default, Debug)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
 pub struct TwelveTonePitch {
     pub tone: TwelveTone,
     pub octave: i8,
+}
+
+impl PartialOrd for TwelveTonePitch {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match self.octave.partial_cmp(&other.octave) {
+            Some(Ordering::Equal) => self.tone.partial_cmp(&other.tone),
+            ord => ord,
+        }
+    }
+}
+
+impl Ord for TwelveTonePitch {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
 }
 
 impl TwelveTonePitch {
@@ -125,6 +141,31 @@ impl From<u32> for PlayState {
 pub struct Chord {
     pub pitches: Vec<TwelveToneNote>,
     pub volume: f32,
+}
+
+impl Add<Chord> for Chord {
+    type Output = Chord;
+
+    fn add(mut self, mut rhs: Chord) -> Self::Output {
+        let volume = self.volume.max(rhs.volume);
+        self.pitches.sort_unstable_by_key(|note| note.pitch);
+        rhs.pitches.sort_unstable_by_key(|note| note.pitch);
+
+        let pitches = self
+            .pitches
+            .into_iter()
+            .merge_join_by(rhs.pitches.into_iter(), |a, b| a.pitch.cmp(&b.pitch))
+            .map(|it| match it {
+                EitherOrBoth::Both(a, b) => TwelveToneNote {
+                    pitch: a.pitch,
+                    volume: a.volume + b.volume,
+                },
+                EitherOrBoth::Left(pitch) | EitherOrBoth::Right(pitch) => pitch,
+            })
+            .collect();
+
+        Chord { pitches, volume }
+    }
 }
 
 impl Chord {
