@@ -15,7 +15,7 @@ use crate::{
     registers::Registers,
     sound::Chord,
     swapbuffer::SwapBuffer,
-    traveler::Traveler,
+    traveler::{self, Traveler},
 };
 
 use self::ui::{UiSingleInput, UiStreamInput};
@@ -77,6 +77,7 @@ pub struct Matrix {
     stream_input: UiStreamInput,
 
     simulating: bool,
+    sound_follows_cursor: bool,
     gridlines: bool,
 
     // rust async moments
@@ -103,6 +104,7 @@ impl Default for Matrix {
             single_input: Default::default(),
             stream_input: Default::default(),
             simulating: false,
+            sound_follows_cursor: false,
             gridlines: false,
             #[cfg(not(target_arch = "wasm32"))]
             future_states: Default::default(),
@@ -204,21 +206,33 @@ impl Matrix {
     }
 
     pub fn update_sound(&self, logical_mouse: Vec2) -> Option<Chord> {
-        self.travelers
-            .iter()
-            .map(|traveler| {
-                let dist = traveler.location.as_vec2().distance(logical_mouse);
-                (traveler, dist)
-            })
-            .filter(|(_, dist)| *dist < 1.5) 
-            .min_by_key(|(_, dist)| (dist * 1000.) as usize)
-            .map(|(traveler, distance)| {
-                let volume = (distance).clamp(0.0, 1.0);
-                Chord {
-                    volume,
-                    pitches: traveler.pitches(),
-                }
-            })
+        if self.sound_follows_cursor {
+            self.travelers
+                .iter()
+                .map(|traveler| {
+                    let dist = traveler.location.as_vec2().distance(logical_mouse);
+                    (traveler, dist)
+                })
+                .filter(|(_, dist)| *dist < 1.5)
+                .min_by_key(|(_, dist)| (dist * 1000.) as usize)
+                .map(|(traveler, distance)| {
+                    let volume = (distance).clamp(0.0, 1.0);
+                    Chord {
+                        volume,
+                        pitches: traveler.pitches(),
+                    }
+                })
+        } else {
+            Some(
+                self.travelers
+                    .iter()
+                    .map(|traveler| Chord {
+                        volume: 1.0,
+                        pitches: traveler.pitches(),
+                    })
+                    .sum(),
+            )
+        }
     }
 
     /// Forces the streaming input square to be a queue when the matrix is in l3x mode

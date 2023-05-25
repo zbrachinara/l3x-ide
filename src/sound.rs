@@ -2,7 +2,7 @@ use itertools::{EitherOrBoth, Itertools};
 use rodio::Source;
 use single_value_channel::{Receiver, Updater};
 
-use std::{cmp::Ordering, ops::Add, time::Duration};
+use std::{cmp::Ordering, ops::Add, time::Duration, iter::Sum};
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -165,6 +165,12 @@ impl Add<Chord> for Chord {
             .collect();
 
         Chord { pitches, volume }
+    }
+}
+
+impl Sum for Chord {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(|a, b| a + b).unwrap_or(Chord::default())
     }
 }
 

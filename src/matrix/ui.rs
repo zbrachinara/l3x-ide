@@ -261,6 +261,13 @@ impl Matrix {
         ui.label("(also please don't press ctrl+v if you're working, this will crash)");
     }
 
+    fn ui_sound(&mut self, ui: &mut Ui) {
+        ui.checkbox(
+            &mut self.sound_follows_cursor,
+            "Play sound for traveler closest to cursor",
+        );
+    }
+
     pub fn config_ui(
         &mut self,
         ui: &mut Ui,
@@ -301,6 +308,9 @@ impl Matrix {
                 ui.collapsing_open("Travelers", |ui| self.ui_cell_traveler_view(ui, location));
             }
         }
+
+        ui.separator();
+        ui.collapsing_open("Sound", |ui| self.ui_sound(ui));
 
         ui.separator();
         ui.collapsing_open("Output", |ui| self.ui_output_view(ui));
