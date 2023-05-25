@@ -112,22 +112,28 @@ impl Matrix {
             });
             ui.scope(|ui| {
                 ui.set_enabled(self.simulating);
-                if ui
-                    .button("▶")
-                    .on_hover_text("play (step automatically)")
-                    .on_disabled_hover_text("play (step automatically")
-                    .clicked()
-                {
-                    self.stepping = true;
-                };
-                if ui
-                    .button("⏸")
-                    .on_hover_text("pause (stop autostepping)")
-                    .on_disabled_hover_text("pause (stop autostepping")
-                    .clicked()
-                {
-                    self.stepping = false;
-                };
+                ui.scope(|ui| {
+                    ui.set_enabled(!self.stepping);
+                    if ui
+                        .button("▶")
+                        .on_hover_text("play (step automatically)")
+                        .on_disabled_hover_text("play (step automatically")
+                        .clicked()
+                    {
+                        self.stepping = true;
+                    };
+                });
+                ui.scope(|ui| {
+                    ui.set_enabled(self.stepping);
+                    if ui
+                        .button("⏸")
+                        .on_hover_text("pause (stop autostepping)")
+                        .on_disabled_hover_text("pause (stop autostepping")
+                        .clicked()
+                    {
+                        self.stepping = false;
+                    };
+                });
                 if ui
                     .button("⏭")
                     .on_hover_text("step by one cycle")
