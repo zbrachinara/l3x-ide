@@ -64,7 +64,7 @@ const PITCHES: &[(u64, TwelveTonePitch)] = {
 
 #[derive(Clone, Debug)]
 pub struct Traveler {
-    pub value: Registers, // TODO new number type representing registers directly
+    pub value: Registers,
     pub location: IVec2,
     pub direction: Direction,
 }
