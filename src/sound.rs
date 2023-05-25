@@ -77,7 +77,7 @@ pub struct TwelveToneNote {
 
 impl TwelveToneNote {
     fn hz(&self) -> f32 {
-        self.pitch.hz() * self.volume
+        self.pitch.hz()
     }
 }
 
