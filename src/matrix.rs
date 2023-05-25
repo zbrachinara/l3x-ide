@@ -15,7 +15,7 @@ use crate::{
     registers::Registers,
     sound::Chord,
     swapbuffer::SwapBuffer,
-    traveler::{self, Traveler},
+    traveler::Traveler,
 };
 
 use self::ui::{UiSingleInput, UiStreamInput};
