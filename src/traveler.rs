@@ -38,6 +38,27 @@ const PITCHES: &[(u64, TwelveTonePitch)] = {
                 octave: 5,
             },
         ),
+        (
+            11,
+            TwelveTonePitch {
+                tone: FNat,
+                octave: 4,
+            },
+        ),
+        (
+            13,
+            TwelveTonePitch {
+                tone: ANat,
+                octave: 4,
+            },
+        ),
+        (
+            17,
+            TwelveTonePitch {
+                tone: ENat,
+                octave: 5,
+            },
+        ),
     ]
 };
 
