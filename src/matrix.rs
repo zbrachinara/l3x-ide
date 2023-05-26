@@ -78,6 +78,7 @@ pub struct Matrix {
 
     simulating: bool,
     sound_follows_cursor: bool,
+    global_volume: u8,
     gridlines: bool,
 
     // rust async moments
@@ -105,6 +106,7 @@ impl Default for Matrix {
             stream_input: Default::default(),
             simulating: false,
             sound_follows_cursor: false,
+            global_volume: 80,
             gridlines: false,
             #[cfg(not(target_arch = "wasm32"))]
             future_states: Default::default(),
@@ -205,6 +207,10 @@ impl Matrix {
         }
     }
 
+    pub fn global_volume(&self) -> f32 {
+        self.global_volume as f32 / 100.
+    }
+
     pub fn update_sound(&self, logical_mouse: Vec2) -> Option<Chord> {
         if self.sound_follows_cursor {
             self.travelers
@@ -216,7 +222,7 @@ impl Matrix {
                 .filter(|(_, dist)| *dist < 1.5)
                 .min_by_key(|(_, dist)| (dist * 1000.) as usize)
                 .map(|(traveler, distance)| {
-                    let volume = (distance).clamp(0.0, 1.0);
+                    let volume = (distance).clamp(0.0, 1.0) * self.global_volume();
                     Chord {
                         volume,
                         pitches: traveler.pitches(),
@@ -227,7 +233,7 @@ impl Matrix {
                 self.travelers
                     .iter()
                     .map(|traveler| Chord {
-                        volume: 1.0,
+                        volume: self.global_volume(),
                         pitches: traveler.pitches(),
                     })
                     .sum(),

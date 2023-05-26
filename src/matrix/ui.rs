@@ -268,6 +268,7 @@ impl Matrix {
     }
 
     fn ui_sound(&mut self, ui: &mut Ui) {
+        ui.add(egui::widgets::Slider::new(&mut self.global_volume, 0..=100));
         ui.checkbox(
             &mut self.sound_follows_cursor,
             "Play sound for traveler closest to cursor",
