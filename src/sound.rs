@@ -155,6 +155,7 @@ impl PlayState {
     /// the current advancement through the period of the wave (if i had more time I would've
     /// written a shorter letter).
     fn advance(&mut self) -> f32 {
+        // self.samples_passed = self.samples_passed.wrapping_add(1);
         self.samples_passed += 1;
         if self.samples_passed > self.sample_rate {
             self.samples_passed = 0;
