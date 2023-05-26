@@ -145,7 +145,7 @@ impl Default for PlayState {
     fn default() -> Self {
         Self {
             samples_passed: Default::default(),
-            sample_rate: 12500,
+            sample_rate: 48000,
         }
     }
 }
