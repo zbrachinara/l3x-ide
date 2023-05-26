@@ -87,14 +87,30 @@ async fn main() {
     loop {
         clear_background(BEIGE);
 
-        state.input_driver.update();
+        let mut egui_hovered = false;
+        egui_macroquad::ui(|ctx| {
+            egui_hovered = ctx.is_pointer_over_area();
+            state.input_driver.update(ctx);
+            egui::Window::new("Menu")
+                .title_bar(false)
+                .anchor(Align2::RIGHT_TOP, (-50.0, 50.0))
+                .show(ctx, |ui| {
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            state.matrix.config_ui(ui);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            executor.try_tick();
+                            state.matrix.config_ui(ui, &mut executor);
+                        }
+                    })
+                });
+        });
+
         let logical =
             (Vec2::from(mouse_position()) - state.offset * state.scale) / (CELL_SIZE * state.scale);
-        if state.input_driver.lmb_hold().is_some() {
-            state
-                .matrix
-                .set_dims((logical + Vec2::splat(0.5)).as_ivec2())
-        }
 
         // panning
         if is_mouse_button_down(MouseButton::Right) {
@@ -116,26 +132,11 @@ async fn main() {
             state.output_interface.update(Chord::default()).unwrap()
         }
 
-        let mut egui_hovered = false;
-        egui_macroquad::ui(|ctx| {
-            egui_hovered = ctx.is_pointer_over_area();
-            egui::Window::new("Menu")
-                .title_bar(false)
-                .anchor(Align2::RIGHT_TOP, (-50.0, 50.0))
-                .show(ctx, |ui| {
-                    egui::ScrollArea::vertical().show(ui, |ui| {
-                        #[cfg(target_arch = "wasm32")]
-                        {
-                            state.matrix.config_ui(ui);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        {
-                            executor.try_tick();
-                            state.matrix.config_ui(ui, &mut executor);
-                        }
-                    })
-                });
-        });
+        if state.input_driver.lmb_hold().is_some() {
+            state
+                .matrix
+                .set_dims((logical + Vec2::splat(0.5)).as_ivec2())
+        }
 
         if !egui_hovered {
             state.scale += mouse_wheel().1 * SCALE_RATE;

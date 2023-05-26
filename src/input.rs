@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use egui::Context;
 use macroquad::{miniquad::EventHandler, prelude::*};
 const HOLD_DURATION: f32 = 0.3;
 const CLICK_SPEED: f32 = 0.2;
@@ -12,18 +13,25 @@ struct MouseButtonDriver {
     /// refers to how long the button has been released
     duration: f32,
     hold_started_at: Vec2,
+    hold_started_this_frame: bool,
 }
 
 impl MouseButtonDriver {
-    fn update(&mut self) {
+    fn update(&mut self, over_ui: bool) {
         let frame_time = get_frame_time();
         if self.duration > CLICK_SPEED {
             self.successive_clicks = 0;
+        }
+        if self.hold_started_this_frame && over_ui {
+            self.successive_clicks = 0;
+            self.duration = 0.;
+            self.held = false;
         }
         self.duration += frame_time;
 
         log::trace!("duration: {}", self.duration);
         log::trace!("held: {}", self.held);
+        self.hold_started_this_frame = false;
     }
 
     fn held(&self) -> Option<(Vec2, f32)> {
@@ -39,6 +47,7 @@ impl MouseButtonDriver {
         self.held = pressed;
         if pressed {
             self.successive_clicks += 1;
+            self.hold_started_this_frame = true;
         }
         self.hold_started_at = vec2(x, y);
         self.duration = 0.0;
@@ -96,9 +105,11 @@ impl EventHandler for InputDriver {
 }
 
 impl InputDriver {
-    pub fn update(&mut self) {
+    pub fn update(&mut self, egui_ctx: &Context) {
         macroquad::input::utils::repeat_all_miniquad_input(self, self.subscribe_id);
-        self.mouse_buttons.values_mut().for_each(|b| b.update());
+        self.mouse_buttons
+            .values_mut()
+            .for_each(|b| b.update(egui_ctx.is_pointer_over_area()));
 
         self.mouse_position.rotate_left(1);
         self.mouse_position[1] = mouse_position().into();
