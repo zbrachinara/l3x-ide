@@ -320,5 +320,10 @@ impl Matrix {
 
         ui.separator();
         ui.collapsing_open("Output", |ui| self.ui_output_view(ui));
+        ui.separator();
+        ui.collapsing("About", |ui| {
+            ui.label("Authors: Eric Yu (zbrachinara), CJD13");
+            ui.hyperlink_to("Github link", "https://github.com/zbrachinara/l3x-ide");
+        });
     }
 }
