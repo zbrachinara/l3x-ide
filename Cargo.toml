@@ -38,7 +38,7 @@ const-push = { git = "https://github.com/zbrachinara/const-push", default-featur
 const-str = "0.5"
 
 # TODO test with web app
-rodio = "0.17"
+rodio = { version = "0.17", default-features = false }
 single_value_channel = "1"
 
 num-bigint = "0.4"
