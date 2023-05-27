@@ -122,7 +122,7 @@ impl TwelveTonePitch {
     }
 }
 
-#[derive(Clone, Copy, Default, Debug)]
+#[derive(Clone, Copy, Default, Debug, PartialEq)]
 pub struct TwelveToneNote {
     pub pitch: TwelveTonePitch,
     pub volume: f32,
@@ -171,7 +171,7 @@ impl From<u32> for PlayState {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, PartialEq, Clone)]
 pub struct Chord {
     pub pitches: Vec<TwelveToneNote>,
     pub volume: f32,
