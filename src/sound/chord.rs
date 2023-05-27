@@ -1,8 +1,6 @@
 use itertools::{EitherOrBoth, Itertools};
-use rodio::Source;
-use single_value_channel::{Receiver, Updater};
 
-use std::{cmp::Ordering, iter::Sum, ops::Add, time::Duration};
+use std::{cmp::Ordering, iter::Sum, ops::Add};
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -126,19 +124,19 @@ impl TwelveTonePitch {
 
 #[derive(Clone, Copy, Default, Debug)]
 pub struct TwelveToneNote {
-    pitch: TwelveTonePitch,
-    volume: f32,
+    pub pitch: TwelveTonePitch,
+    pub volume: f32,
 }
 
 impl TwelveToneNote {
-    fn hz(&self) -> f32 {
+    pub(super) fn hz(&self) -> f32 {
         self.pitch.hz()
     }
 }
 
-struct PlayState {
+pub(super) struct PlayState {
     samples_passed: u32,
-    sample_rate: u32,
+    pub(super) sample_rate: u32,
 }
 
 impl Default for PlayState {
@@ -154,12 +152,12 @@ impl PlayState {
     /// Advances self by the given sample rate and returns the fraction of tau which corresponds to
     /// the current advancement through the period of the wave (if i had more time I would've
     /// written a shorter letter).
-    fn advance(&mut self) -> f32 {
+    pub(super) fn advance(&mut self) -> f32 {
         self.samples_passed = self.samples_passed.wrapping_add(1);
         self.time()
     }
 
-    fn time(&self) -> f32 {
+    pub(super) fn time(&self) -> f32 {
         (self.samples_passed as f32) / (self.sample_rate as f32) * std::f32::consts::TAU
     }
 }
@@ -208,58 +206,4 @@ impl Sum for Chord {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.reduce(|a, b| a + b).unwrap_or(Chord::default())
     }
-}
-
-impl Chord {
-    fn play_with_state(&self, state: &PlayState) -> f32 {
-        self.pitches
-            .iter()
-            .copied()
-            .map(|u| ((u.hz() * state.time()).sin() * u.volume, u.volume))
-            .reduce(|(wv, vol), (wv_new, vol_new)| (wv + wv_new, vol + vol_new))
-            .map(|(wv, vol)| wv / vol)
-            .unwrap_or(0.0)
-            * self.volume
-    }
-}
-
-pub struct Signal {
-    receiver: Receiver<Chord>,
-    state: PlayState,
-}
-
-impl Iterator for Signal {
-    type Item = f32;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.state.advance();
-        Some(self.receiver.latest().play_with_state(&self.state))
-    }
-}
-
-impl Source for Signal {
-    fn current_frame_len(&self) -> Option<usize> {
-        None
-    }
-
-    fn channels(&self) -> u16 {
-        1
-    }
-
-    fn sample_rate(&self) -> u32 {
-        self.state.sample_rate
-    }
-
-    fn total_duration(&self) -> Option<Duration> {
-        None
-    }
-}
-
-pub fn pitch_signals() -> (Updater<Chord>, Signal) {
-    let (receiver, sender) = single_value_channel::channel_starting_with(Default::default());
-    let signal = Signal {
-        receiver,
-        state: Default::default(),
-    };
-    (sender, signal)
 }

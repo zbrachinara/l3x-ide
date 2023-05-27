@@ -38,7 +38,7 @@ struct Model {
 impl Default for Model {
     fn default() -> Self {
         let (output, output_handle) = OutputStream::try_default().unwrap();
-        let (output_interface, signals) = sound::chord::pitch_signals();
+        let (output_interface, signals) = sound::signal::pitch_signals();
         output_handle
             .play_raw(signals)
             .expect("Could not begin sound engine");

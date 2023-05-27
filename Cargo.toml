@@ -32,6 +32,7 @@ thiserror = "1.0"
 duplicate = "1.0"
 vec-drain-where = "1.0"
 if_chain = "1.0"
+cfg-if = "1"
 strum = "0.24"
 strum_macros = "0.24"
 const-push = { git = "https://github.com/zbrachinara/const-push", default-features = false}
