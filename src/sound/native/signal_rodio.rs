@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use rodio::Source;
-use single_value_channel::{Receiver, Updater};
+use rodio::{OutputStream, Source};
+use single_value_channel::{Receiver, NoReceiverError};
 
 use crate::sound::chord::{Chord, PlayState};
 
@@ -15,6 +15,32 @@ impl Chord {
             .map(|(wv, vol)| wv / vol)
             .unwrap_or(0.0)
             * self.volume
+    }
+}
+
+pub struct Updater {
+    #[allow(unused)] // needs to exist so that the sound thread is allowed to live
+    output: OutputStream,
+    output_interface: single_value_channel::Updater<Chord>,
+}
+
+impl Default for Updater {
+    fn default() -> Self {
+        let (output, output_handle) = OutputStream::try_default().unwrap();
+        let (output_interface, signals) = pitch_signals();
+        output_handle
+            .play_raw(signals)
+            .expect("Could not begin sound engine");
+        Self {
+            output,
+            output_interface,
+        }
+    }
+}
+
+impl Updater {
+    pub fn update(&mut self, chord: Chord) -> Result<(), NoReceiverError<Chord>> {
+        self.output_interface.update(chord)
     }
 }
 
@@ -50,7 +76,7 @@ impl Source for Signal {
     }
 }
 
-pub fn pitch_signals() -> (Updater<Chord>, Signal) {
+fn pitch_signals() -> (single_value_channel::Updater<Chord>, Signal) {
     let (receiver, sender) = single_value_channel::channel_starting_with(Default::default());
     let signal = Signal {
         receiver,

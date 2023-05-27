@@ -3,9 +3,8 @@
 use egui::Align2;
 use macroquad::prelude::*;
 use macroquad::window::next_frame;
-use rodio::OutputStream;
-use single_value_channel::Updater;
 use sound::chord::Chord;
+use sound::signal::Updater;
 
 use crate::input::InputDriver;
 use crate::matrix::Matrix;
@@ -29,27 +28,19 @@ struct Model {
     offset: Vec2,
     scale: f32,
     input_driver: InputDriver,
-    #[allow(unused)] // needs to exist so that the sound thread is allowed to live
-    output: OutputStream,
-    output_interface: Updater<Chord>,
+    sound_handle: Updater,
     sound_needs_killing: bool,
 }
 
 impl Default for Model {
     fn default() -> Self {
-        let (output, output_handle) = OutputStream::try_default().unwrap();
-        let (output_interface, signals) = sound::signal::pitch_signals();
-        output_handle
-            .play_raw(signals)
-            .expect("Could not begin sound engine");
         Self {
             matrix: Default::default(),
             input_driver: Default::default(),
             offset: Vec2::splat(100.0),
             scale: 1.0,
-            output_interface,
-            output,
             sound_needs_killing: false,
+            sound_handle: Updater::default(),
         }
     }
 }
@@ -126,10 +117,10 @@ async fn main() {
 
         if let Some(chord) = state.matrix.update_sound(logical) {
             state.sound_needs_killing = true;
-            state.output_interface.update(chord).unwrap();
+            state.sound_handle.update(chord).unwrap();
         } else if state.sound_needs_killing {
             state.sound_needs_killing = false;
-            state.output_interface.update(Chord::default()).unwrap()
+            state.sound_handle.update(Chord::default()).unwrap()
         }
 
         if state.input_driver.lmb_hold().is_some() {
