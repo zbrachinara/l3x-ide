@@ -13,7 +13,7 @@ mod ui;
 use crate::{
     l3x::{Direction, L3XCommand, L3X},
     registers::Registers,
-    sound::Chord,
+    sound::chord::Chord,
     swapbuffer::SwapBuffer,
     traveler::Traveler,
 };

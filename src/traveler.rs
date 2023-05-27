@@ -4,11 +4,11 @@ use std::fmt::Display;
 use crate::{
     l3x::Direction,
     registers::Registers,
-    sound::{TwelveToneNote, TwelveTonePitch},
+    sound::chord::{TwelveToneNote, TwelveTonePitch},
 };
 
 const PITCHES: &[(u64, TwelveTonePitch)] = {
-    use crate::sound::pitch_from_str as p;
+    use crate::sound::chord::pitch_from_str as p;
     &[
         (2, p("C", 4)),
         (3, p("G", 4)),

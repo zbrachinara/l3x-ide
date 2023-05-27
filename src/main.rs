@@ -5,7 +5,7 @@ use macroquad::prelude::*;
 use macroquad::window::next_frame;
 use rodio::OutputStream;
 use single_value_channel::Updater;
-use sound::Chord;
+use sound::chord::Chord;
 
 use crate::input::InputDriver;
 use crate::matrix::Matrix;
@@ -38,7 +38,7 @@ struct Model {
 impl Default for Model {
     fn default() -> Self {
         let (output, output_handle) = OutputStream::try_default().unwrap();
-        let (output_interface, signals) = sound::pitch_signals();
+        let (output_interface, signals) = sound::chord::pitch_signals();
         output_handle
             .play_raw(signals)
             .expect("Could not begin sound engine");
