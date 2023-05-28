@@ -9,8 +9,22 @@ function getUint8Memory() {
   return cachedUint8Memory;
 }
 textDecoder.decode()
+function getBuf(ptr, len) {
+  return getUint8Memory().subarray(ptr, ptr + len)
+}
 function getString(ptr, len) {
-  return textDecoder.decode(getUint8Memory().subarray(ptr, ptr + len))
+  return textDecoder.decode(getBuf(ptr, len))
+}
+
+// https://stackoverflow.com/a/18197341 CC-BY-SA
+function give_user_csv(filename, text) {
+  var element = document.createElement('a');
+  element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
 }
 
 const audio_ctx = new AudioContext();
@@ -52,6 +66,13 @@ register_plugin = function (importObject) {
     osc.start()
 
     oscillators.push(osc)
+  }
+
+  // files
+  importObject.env.wasm_give_user_file = function (filename_ptr, filename_len, data_ptr, data_len) {
+    let filename = getString(filename_ptr, filename_len)
+    let data = getString(data_ptr, data_len)
+    give_user_csv(filename, data)
   }
 }
 
