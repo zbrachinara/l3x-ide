@@ -2,85 +2,27 @@ use csv::{ReaderBuilder, WriterBuilder};
 use macroquad::prelude::*;
 use ndarray::{ArrayBase, OwnedRepr};
 use ndarray_csv::{Array2Reader, Array2Writer};
-use std::{borrow::Cow, collections::HashMap, fs::OpenOptions, io::Write};
 
-use crate::l3x::{L3XParseError, MaybeL3X};
+use std::{borrow::Cow, collections::HashMap};
+
+use crate::{
+    l3x::{L3XParseError, MaybeL3X},
+    wasync::AsyncContext,
+};
 
 use super::Matrix;
 
 #[cfg(not(target_arch = "wasm32"))]
 impl Matrix {
-    pub fn start_file_import(&mut self, executor: &mut async_executor::LocalExecutor) {
-        let states = &mut self.future_states;
-        if states.read_file.is_none() {
-            states.read_file = Some(executor.spawn(async {
-                let file = rfd::AsyncFileDialog::new().pick_file().await;
-                match file {
-                    Some(fi) => Some(fi.read().await),
-                    None => None,
-                }
-            }));
-        }
-    }
-
-    pub fn try_open_file(&mut self) {
-        let states = &mut self.future_states;
-        if_chain::if_chain! {
-            if let Some(ref task) = states.read_file;
-            if task.is_finished();
-            if let Some(file) = futures_lite::future::block_on(
-                std::mem::take(&mut states.read_file).unwrap()
-            );
-            then {
-                self.import_data(&file);
-            }
-
-        }
-    }
-
-    pub fn start_file_export(&mut self, executor: &mut async_executor::LocalExecutor) {
-        let states = &mut self.future_states;
-        if states.write_file.is_none() {
-            states.write_file = Some(executor.spawn(rfd::AsyncFileDialog::new().save_file()));
-        }
-    }
-
-    pub fn try_export_file(&mut self) {
-        let states = &mut self.future_states;
-        if_chain::if_chain! {
-            if let Some(ref task) = states.write_file;
-            if task.is_finished();
-            if let Some(handle) = futures_lite::future::block_on(
-                std::mem::take(&mut states.write_file).unwrap()
-            );
-            then {
-                let mut file = match OpenOptions::new()
-                    .truncate(false)
-                    .write(true)
-                    .create(true)
-                    .open(handle.path()) {
-                    Ok(fi) => fi,
-                    Err(e) => {
-                        log::error!("File could not be opnened: {e}");
-                        return;
-                    }       
-                };
-                
-                match self.export_data() {
-                    Ok(data) => {
-                        let _ = file.write(&data);
-                    },
-                    Err(e) => {
-                        log::error!("CSV writing failed with error: {e}")
-                    },
-                }
-            }
+    pub fn try_import_data(&mut self, ctx: &mut AsyncContext) {
+        if let Some(data) = ctx.try_open_file() {
+            self.import_data(&data)
         }
     }
 }
 
 impl Matrix {
-    fn export_data(&self) -> Result<Vec<u8>, csv::Error> {
+    pub(super) fn export_data(&self) -> Result<Vec<u8>, csv::Error> {
         log::debug!("Beginning file export");
         let mut arr = ArrayBase::<OwnedRepr<_>, _>::from_elem(
             [self.dims.x as usize, self.dims.y as usize],

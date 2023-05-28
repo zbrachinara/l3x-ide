@@ -2,6 +2,7 @@ use crate::{
     l3x::{L3XCommand, L3X},
     registers::Registers,
     traveler::Traveler,
+    wasync::AsyncContext,
 };
 use egui::{CollapsingHeader, CollapsingResponse, Ui, WidgetText};
 use macroquad::prelude::*;
@@ -247,16 +248,18 @@ impl Matrix {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn ui_import(&mut self, ui: &mut Ui, executor: &mut async_executor::LocalExecutor) {
+    fn ui_import(&mut self, ui: &mut Ui, ctx: &mut AsyncContext) {
         ui.horizontal(|ui| {
             ui.scope(|ui| {
                 ui.set_enabled(!self.simulating);
                 if ui.button("Import").clicked() {
-                    self.start_file_import(executor);
+                    ctx.start_file_import();
                 }
             });
             if ui.button("Export").clicked() {
-                self.start_file_export(executor);
+                if let Ok(data) = self.export_data() {
+                    ctx.start_file_export(data)
+                }
             };
         });
     }
@@ -281,7 +284,8 @@ impl Matrix {
     pub fn config_ui(
         &mut self,
         ui: &mut Ui,
-        #[cfg(not(target_arch = "wasm32"))] executor: &mut async_executor::LocalExecutor,
+        // #[cfg(not(target_arch = "wasm32"))] executor: &mut async_executor::LocalExecutor,
+        executor: &mut AsyncContext,
     ) {
         ui.heading("Simulation");
         self.ui_simulation_tools(ui);

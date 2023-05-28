@@ -5,6 +5,7 @@ use macroquad::prelude::*;
 use macroquad::window::next_frame;
 use sound::chord::Chord;
 use sound::signal::Updater;
+use wasync::AsyncContext;
 
 use crate::input::InputDriver;
 use crate::matrix::Matrix;
@@ -17,23 +18,24 @@ mod registers;
 mod sound;
 mod swapbuffer;
 mod traveler;
-mod wasync;
 #[cfg(target_arch = "wasm32")]
 mod wasm_log;
+mod wasync;
 
 const CELL_SIZE: f32 = 60.0;
 const SCALE_RATE: f32 = 0.02;
 
-struct Model {
+struct Model<'a> {
     matrix: Matrix,
     offset: Vec2,
     scale: f32,
     input_driver: InputDriver,
     sound_handle: Updater,
     sound_needs_killing: bool,
+    ctx: AsyncContext<'a>,
 }
 
-impl Default for Model {
+impl<'a> Default for Model<'a> {
     fn default() -> Self {
         Self {
             matrix: Default::default(),
@@ -42,6 +44,7 @@ impl Default for Model {
             scale: 1.0,
             sound_needs_killing: false,
             sound_handle: Updater::default(),
+            ctx: Default::default(),
         }
     }
 }
@@ -71,8 +74,8 @@ async fn main() {
 
     log::debug!("If you see this message, logging is enabled (Debug level)");
 
-    #[cfg(not(target_arch = "wasm32"))]
-    let mut executor = async_executor::LocalExecutor::default();
+    // #[cfg(not(target_arch = "wasm32"))]
+    // let mut executor = async_executor::LocalExecutor::default();
 
     let mut state = Model::default();
 
@@ -94,8 +97,8 @@ async fn main() {
                         }
                         #[cfg(not(target_arch = "wasm32"))]
                         {
-                            executor.try_tick();
-                            state.matrix.config_ui(ui, &mut executor);
+                            state.ctx.tick();
+                            state.matrix.config_ui(ui, &mut state.ctx);
                         }
                     })
                 });
@@ -134,7 +137,7 @@ async fn main() {
             state.scale += mouse_wheel().1 * SCALE_RATE;
         }
 
-        state.matrix.update();
+        state.matrix.update(&mut state.ctx);
 
         state.matrix.draw(state.offset, CELL_SIZE, state.scale);
         egui_macroquad::draw();

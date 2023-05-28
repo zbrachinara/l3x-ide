@@ -6,8 +6,6 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use vec_drain_where::VecDrainWhereExt;
 
 mod file;
-#[cfg(not(target_arch = "wasm32"))]
-mod future_states;
 mod ui;
 
 use crate::{
@@ -15,7 +13,7 @@ use crate::{
     registers::Registers,
     sound::chord::Chord,
     swapbuffer::SwapBuffer,
-    traveler::Traveler,
+    traveler::Traveler, wasync::AsyncContext,
 };
 
 use self::ui::{UiSingleInput, UiStreamInput};
@@ -80,10 +78,6 @@ pub struct Matrix {
     sound_follows_cursor: bool,
     global_volume: u8,
     gridlines: bool,
-
-    // rust async moments
-    #[cfg(not(target_arch = "wasm32"))]
-    future_states: future_states::FutureStates,
 }
 
 impl Default for Matrix {
@@ -108,15 +102,13 @@ impl Default for Matrix {
             sound_follows_cursor: false,
             global_volume: 80,
             gridlines: false,
-            #[cfg(not(target_arch = "wasm32"))]
-            future_states: Default::default(),
             time: 0,
         }
     }
 }
 
 impl Matrix {
-    pub fn update(&mut self) {
+    pub fn update(&mut self, ctx: &mut AsyncContext) {
         self.time += 1;
         if self.time > self.period {
             self.time %= self.period;
@@ -126,8 +118,8 @@ impl Matrix {
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
-            self.try_open_file();
-            self.try_export_file();
+            self.try_import_data(ctx);
+            ctx.try_export_file();
         }
     }
 
@@ -137,7 +129,6 @@ impl Matrix {
         let cell_size = cell_size * scale;
         let offset = offset * scale;
         let font_size = 32.0 * scale;
-        let text_offset = vec2(0.05, 0.67) * cell_size;
 
         // annotate input and output
         let io_text_offset = vec2(0.4, 0.67) * cell_size;
