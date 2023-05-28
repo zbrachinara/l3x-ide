@@ -8,12 +8,12 @@ function getUint8Memory() {
   }
   return cachedUint8Memory;
 }
-textDecoder.decode()
-function getBuf(ptr, len) {
+
+function get_buf(ptr, len) {
   return getUint8Memory().subarray(ptr, ptr + len)
 }
-function getString(ptr, len) {
-  return textDecoder.decode(getBuf(ptr, len))
+function get_string(ptr, len) {
+  return textDecoder.decode(get_buf(ptr, len))
 }
 
 // https://stackoverflow.com/a/18197341 CC-BY-SA
@@ -33,19 +33,19 @@ var oscillators = []
 register_plugin = function (importObject) {
   // logging
   importObject.env.wasm_log_error = function (ptr, len) {
-    console.error(getString(ptr, len))
+    console.error(get_string(ptr, len))
   }
   importObject.env.wasm_log_warn = function (ptr, len) {
-    console.warn(getString(ptr, len))
+    console.warn(get_string(ptr, len))
   }
   importObject.env.wasm_log_info = function (ptr, len) {
-    console.info(getString(ptr, len))
+    console.info(get_string(ptr, len))
   }
   importObject.env.wasm_log_debug = function (ptr, len) {
-    console.log(getString(ptr, len))
+    console.log(get_string(ptr, len))
   }
   importObject.env.wasm_log_trace = function (ptr, len) {
-    console.debug(getString(ptr, len))
+    console.debug(get_string(ptr, len))
   }
 
   // sound
@@ -70,8 +70,8 @@ register_plugin = function (importObject) {
 
   // files
   importObject.env.wasm_give_user_file = function (filename_ptr, filename_len, data_ptr, data_len) {
-    let filename = getString(filename_ptr, filename_len)
-    let data = getString(data_ptr, data_len)
+    let filename = get_string(filename_ptr, filename_len)
+    let data = get_string(data_ptr, data_len)
     give_user_csv(filename, data)
   }
 }
