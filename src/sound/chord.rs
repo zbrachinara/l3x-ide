@@ -110,7 +110,7 @@ pub const fn pitch_from_str(pitch: &str, octave: i8) -> TwelveTonePitch {
 }
 
 impl TwelveTonePitch {
-    fn hz(self) -> f32 {
+    pub(super) fn hz(self) -> f32 {
         self.tone.hz_at_zero() * (2f32).powi(self.octave as i32)
     }
 

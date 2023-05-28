@@ -1,8 +1,8 @@
-use crate::sound::chord::Chord;
+use crate::sound::chord::{Chord, TwelveToneNote};
 
 extern "C" {
     fn wasm_sound_drop_all();
-    fn wasm_sound_play_a();
+    fn wasm_sound_play(frequency: f32, volume: f32);
 }
 
 #[derive(Default)]
@@ -16,10 +16,17 @@ impl Updater {
 
         if needs_update {
             self.previous = Some(chord.clone());
-            if chord.pitches.is_empty() {
-                unsafe { wasm_sound_drop_all() }
-            } else {
-                unsafe { wasm_sound_play_a() }
+            unsafe { wasm_sound_drop_all() };
+
+            let raw_volume = chord
+                .pitches
+                .iter()
+                .map(|TwelveToneNote { volume, .. }| *volume)
+                .sum::<f32>();
+
+            for TwelveToneNote { pitch, volume } in chord.pitches {
+                let vol = volume / raw_volume * chord.volume;
+                unsafe { wasm_sound_play(pitch.hz(), vol) }
             }
         }
         Ok(())

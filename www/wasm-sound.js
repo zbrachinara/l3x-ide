@@ -1,18 +1,26 @@
 
 const audio_ctx = new AudioContext();
-const oscillators = [];
+var oscillators = []
 
 register_plugin = function (importObject) {
-  importObject.env.wasm_sound_drop_all = function() {
+  importObject.env.wasm_sound_drop_all = function () {
     oscillators.forEach(oscillator => oscillator.stop())
+    oscillators = []
   }
 
-  importObject.env.wasm_sound_play_a = function() {
-    let c_oscillator = audio_ctx.createOscillator()
-    c_oscillator.type = 'sine'
-    c_oscillator.connect(audio_ctx.destination)
-    c_oscillator.start()
-    oscillators.push(c_oscillator)
+  importObject.env.wasm_sound_play = function (frequency, volume) {
+    let osc = audio_ctx.createOscillator()
+    osc.type = 'sine'
+    osc.frequency.value = frequency
+
+    let vol = audio_ctx.createGain()
+    vol.gain.value = volume
+
+    osc.connect(vol)
+    vol.connect(audio_ctx.destination)
+    osc.start()
+
+    oscillators.push(osc)
   }
 }
 
