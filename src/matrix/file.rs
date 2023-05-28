@@ -12,7 +12,6 @@ use crate::{
 
 use super::Matrix;
 
-#[cfg(not(target_arch = "wasm32"))]
 impl Matrix {
     pub fn try_import_data(&mut self, ctx: &mut AsyncContext) {
         if let Some(data) = ctx.try_open_file() {

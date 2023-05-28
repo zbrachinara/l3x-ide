@@ -247,7 +247,6 @@ impl Matrix {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
     fn ui_import(&mut self, ui: &mut Ui, ctx: &mut AsyncContext) {
         ui.horizontal(|ui| {
             ui.scope(|ui| {
@@ -262,12 +261,6 @@ impl Matrix {
                 }
             };
         });
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    fn ui_import(&mut self, ui: &mut Ui) {
-        ui.label("Import/export is broken on web right now, sorry :/");
-        ui.label("(also please don't press ctrl+v if you're working, this will crash)");
     }
 
     fn ui_sound(&mut self, ui: &mut Ui) {
@@ -292,10 +285,8 @@ impl Matrix {
 
         ui.separator();
         ui.collapsing_open("Import tools", |ui| {
-            #[cfg(not(target_arch = "wasm32"))]
+            // #[cfg(not(target_arch = "wasm32"))]
             self.ui_import(ui, executor);
-            #[cfg(target_arch = "wasm32")]
-            self.ui_import(ui);
         });
 
         ui.separator();

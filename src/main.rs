@@ -91,15 +91,8 @@ async fn main() {
                 .anchor(Align2::RIGHT_TOP, (-50.0, 50.0))
                 .show(ctx, |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
-                        #[cfg(target_arch = "wasm32")]
-                        {
-                            state.matrix.config_ui(ui);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        {
-                            state.ctx.tick();
-                            state.matrix.config_ui(ui, &mut state.ctx);
-                        }
+                        state.ctx.tick();
+                        state.matrix.config_ui(ui, &mut state.ctx);
                     })
                 });
         });

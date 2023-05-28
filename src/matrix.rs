@@ -13,7 +13,8 @@ use crate::{
     registers::Registers,
     sound::chord::Chord,
     swapbuffer::SwapBuffer,
-    traveler::Traveler, wasync::AsyncContext,
+    traveler::Traveler,
+    wasync::AsyncContext,
 };
 
 use self::ui::{UiSingleInput, UiStreamInput};
@@ -116,11 +117,8 @@ impl Matrix {
                 self.step();
             }
         }
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            self.try_import_data(ctx);
-            ctx.try_export_file();
-        }
+        self.try_import_data(ctx);
+        ctx.try_export_file();
     }
 
     pub fn draw(&self, offset: Vec2, cell_size: f32, scale: f32) {
