@@ -17,6 +17,7 @@ mod registers;
 mod sound;
 mod swapbuffer;
 mod traveler;
+mod wasync;
 #[cfg(target_arch = "wasm32")]
 mod wasm_log;
 
