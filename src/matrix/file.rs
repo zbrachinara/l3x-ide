@@ -24,7 +24,7 @@ impl Matrix {
     pub(super) fn export_data(&self) -> Result<Vec<u8>, csv::Error> {
         log::debug!("Beginning file export");
         let mut arr = ArrayBase::<OwnedRepr<_>, _>::from_elem(
-            [self.dims.x as usize, self.dims.y as usize],
+            [self.dims.y as usize, self.dims.x as usize],
             Cow::Borrowed(""),
         );
 
