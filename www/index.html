@@ -2,41 +2,41 @@
 <html lang="en">
 
 <head>
-    <meta charset="utf-8">
-    <title>L3X IDE</title>
-    <style>
-        html,
-        body,
-        canvas {
-            margin: 0px;
-            padding: 0px;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            position: absolute;
-            background: black;
-            z-index: 0;
-        }
+  <meta charset="utf-8">
+  <title>L3X IDE</title>
+  <style>
+    html,
+    body,
+    canvas {
+      margin: 0px;
+      padding: 0px;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: absolute;
+      background: black;
+      z-index: 0;
+    }
 
-        a,
-        input {
-            display: 'none';
-        }
-    </style>
+    a,
+    input {
+      display: 'none';
+    }
+  </style>
 </head>
 
 <body>
-    <canvas id="glcanvas" tabindex='1'></canvas>
-    <input type="file" id="file_input" accept="text/*">
-    <script>
-        document.addEventListener('contextmenu', e => e.preventDefault(), false)
-    </script>
-    <!-- Minified and statically hosted version of https://github.com/not-fl3/macroquad/blob/master/js/mq_js_bundle.js -->
-    <script src="mq_js_bundle.js"></script>
-    <script src="l3x-utils.js"></script>
-    <script src="sapp_jsutils.js"></script>
-    <script src="quad-url.js"></script>
-    <script>load("l3x-ide.wasm");</script> <!-- Your compiled wasm file -->
+  <canvas id="glcanvas" tabindex='1'></canvas>
+  <input type="file" id="file_input" accept="text/*">
+  <script>
+    document.addEventListener('contextmenu', e => e.preventDefault(), false)
+  </script>
+  <!-- Minified and statically hosted version of https://github.com/not-fl3/macroquad/blob/master/js/mq_js_bundle.js -->
+  <script src="mq_js_bundle.js"></script>
+  <script src="l3x-utils.js"></script>
+  <script src="sapp_jsutils.js"></script>
+  <script src="quad-url.js"></script>
+  <script>load("l3x-ide.wasm");</script> <!-- Your compiled wasm file -->
 </body>
 
 </html>
