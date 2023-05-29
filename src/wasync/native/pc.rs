@@ -5,10 +5,12 @@ use rfd::FileHandle;
 
 use crate::matrix::MatrixMode;
 
+type ReadFileOutput = (Vec<u8>, Option<MatrixMode>);
+
 #[derive(Default)]
 pub struct AsyncContext<'a> {
     executor: async_executor::LocalExecutor<'a>,
-    read_file: Option<Task<Option<(Vec<u8>, Option<MatrixMode>)>>>,
+    read_file: Option<Task<Option<ReadFileOutput>>>,
     write_file: Option<Task<Option<(FileHandle, &'static str)>>>,
     pending_data: Option<Vec<u8>>,
 }
