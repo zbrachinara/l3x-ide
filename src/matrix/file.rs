@@ -15,6 +15,7 @@ use super::Matrix;
 impl Matrix {
     pub fn try_import_data(&mut self, ctx: &mut AsyncContext) {
         if let Some(data) = ctx.try_open_file() {
+            log::debug!("attempting data import");
             self.import_data(&data)
         }
     }
@@ -48,10 +49,17 @@ impl Matrix {
 
     fn import_data(&mut self, data: &[u8]) {
         let mut reader = ReaderBuilder::new().has_headers(false).from_reader(data);
-        let Ok(array) = reader.deserialize_array2_dynamic::<String>() else {return};
+        let array = match reader.deserialize_array2_dynamic::<String>() {
+            Ok(a) => a,
+            Err(e) => {
+                log::error!("Failed to deserialize file: {e:?}");
+                return;
+            }
+        };
 
         if array.is_empty() {
-            return; // error
+            log::warn!("Imported file was empty, doing nothing");
+            return;
         }
 
         let mut max_loc = IVec2::ZERO;
@@ -74,7 +82,7 @@ impl Matrix {
                 Result::<_, L3XParseError>::Ok(())
             })
         {
-            log::warn!("inport failure: {err:?}")
+            log::error!("inport failure: {err:?}");
         }
 
         self.instructions = instruction_buffer;
