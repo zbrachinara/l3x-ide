@@ -34,7 +34,10 @@ impl<'a, T> Index<usize> for IndexedSlice<'a, T> {
     }
 }
 
-const fn const_triangulate_indices_inner<const N: usize>(vertices: &[Vec2], indices: &[u16])-> ConstVec<u16,N> {
+const fn const_triangulate_indices_inner<const N: usize>(
+    vertices: &[Vec2],
+    indices: &[u16],
+) -> ConstVec<u16, N> {
     assert!(
         indices.len() >= 3,
         "Triangulation produced a low (<3) number of indices"

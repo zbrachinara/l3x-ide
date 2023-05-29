@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use rodio::{OutputStream, Source};
-use single_value_channel::{Receiver, NoReceiverError};
+use single_value_channel::{NoReceiverError, Receiver};
 
 use crate::sound::chord::{Chord, PlayState};
 

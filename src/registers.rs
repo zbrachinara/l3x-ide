@@ -1,8 +1,11 @@
-use std::{str::FromStr, fmt::Display, ops::{Mul, MulAssign}};
+use std::{
+    fmt::Display,
+    ops::{Mul, MulAssign},
+    str::FromStr,
+};
 
 use itertools::{merge_join_by, Itertools};
-use num_bigint::{ParseBigIntError, BigUint};
-
+use num_bigint::{BigUint, ParseBigIntError};
 
 /// Represents the value of a traveler or a cell. If the value of the register is 1, then the
 /// vector in this struct is empty. Otherwise, it is a list of (p, pow), where p is a prime,
