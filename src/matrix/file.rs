@@ -15,7 +15,6 @@ use super::Matrix;
 impl Matrix {
     pub fn try_import_data(&mut self, ctx: &mut AsyncContext) {
         if let Some(data) = ctx.try_open_file() {
-            log::debug!("attempting data import");
             self.import_data(&data)
         }
     }

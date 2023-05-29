@@ -36,7 +36,7 @@ const store_imported_file = function () {
   [f] = this.files // input element is specified to contain exactly one file
   let reader = new FileReader()
   reader.onload = (e) => {
-    stored_file = e.target.result
+    stored_file = new Uint8Array(e.target.result)
   }
   reader.readAsArrayBuffer(f);
 }

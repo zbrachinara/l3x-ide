@@ -37,14 +37,13 @@ impl<'a> AsyncContext<'a> {
     }
 
     pub fn try_open_file(&mut self) -> Option<Vec<u8>> {
-        let length = unsafe {wasm_file_import_len()};
+        let length = unsafe { wasm_file_import_len() };
         if length > 0 {
             let mut buf = Vec::with_capacity(length);
             unsafe {
                 wasm_import_file(buf.as_mut_ptr());
                 buf.set_len(length);
             }
-            log::debug!("{buf:?}");
             Some(buf)
         } else {
             None
