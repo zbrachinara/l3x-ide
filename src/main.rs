@@ -32,6 +32,7 @@ struct Model<'a> {
     input_driver: InputDriver,
     sound_handle: Updater,
     sound_needs_killing: bool,
+    resizing_matrix: bool,
     ctx: AsyncContext<'a>,
 }
 
@@ -44,6 +45,7 @@ impl<'a> Default for Model<'a> {
             scale: 1.0,
             sound_needs_killing: false,
             sound_handle: Updater::default(),
+            resizing_matrix: false,
             ctx: Default::default(),
         }
     }
@@ -71,11 +73,7 @@ async fn main() {
             // TODO not sure if it's possible to communicate to the user here, maybe use an alert or something?
         }
     }
-
     log::debug!("If you see this message, logging is enabled (Debug level)");
-
-    // #[cfg(not(target_arch = "wasm32"))]
-    // let mut executor = async_executor::LocalExecutor::default();
 
     let mut state = Model::default();
 
@@ -96,6 +94,15 @@ async fn main() {
                     })
                 });
         });
+
+        if let Some(pos) = state.input_driver.lmb().started_holding() {
+            let corner_position =
+                (state.offset + state.matrix.dims.as_vec2() * CELL_SIZE) * state.scale;
+            const ALLOWED_DISTANCE: f32 = 15.;
+            if corner_position.distance_squared(pos) < (ALLOWED_DISTANCE * state.scale).powi(2) {
+                state.resizing_matrix = true;
+            }
+        }
 
         let logical =
             (Vec2::from(mouse_position()) - state.offset * state.scale) / (CELL_SIZE * state.scale);
@@ -120,10 +127,14 @@ async fn main() {
             state.sound_handle.update(Chord::default()).unwrap()
         }
 
-        if state.input_driver.lmb().held().is_some() {
-            state
-                .matrix
-                .set_dims((logical + Vec2::splat(0.5)).as_ivec2())
+        if state.resizing_matrix {
+            if state.input_driver.lmb().held().is_some() {
+                state
+                    .matrix
+                    .set_dims((logical + Vec2::splat(0.5)).as_ivec2())
+            } else {
+                state.resizing_matrix = false;
+            }
         }
 
         if !egui_hovered {

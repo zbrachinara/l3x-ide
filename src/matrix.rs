@@ -56,7 +56,7 @@ impl MatrixMode {
 pub struct Matrix {
     mode: MatrixMode,
     instructions: HashMap<IVec2, L3X>,
-    dims: UVec2,
+    pub dims: UVec2,
     selecting: Option<IVec2>,
     selecting_text: String,
     period: usize,
