@@ -6,7 +6,7 @@ const HOLD_DURATION: f32 = 0.3;
 const CLICK_SPEED: f32 = 0.2;
 
 #[derive(Default)]
-struct MouseButtonDriver {
+pub struct MouseButtonDriver {
     successive_clicks: u32,
     held: bool,
     /// If [held] is true, this refers to how long the button has been held. If [held] is false, this
@@ -16,6 +16,7 @@ struct MouseButtonDriver {
     hold_started_this_frame: bool,
 }
 
+/// Private functions which facilitate updating the driver's internal state
 impl MouseButtonDriver {
     fn update(&mut self, over_ui: bool) {
         let frame_time = get_frame_time();
@@ -34,15 +35,6 @@ impl MouseButtonDriver {
         self.hold_started_this_frame = false;
     }
 
-    fn held(&self) -> Option<(Vec2, f32)> {
-        (self.held && self.duration >= HOLD_DURATION)
-            .then_some((self.hold_started_at, self.duration))
-    }
-
-    fn double_clicked(&self) -> bool {
-        self.successive_clicks == 2 && self.held
-    }
-
     fn listen_event(&mut self, pressed: bool, x: f32, y: f32) {
         self.held = pressed;
         if pressed {
@@ -51,6 +43,21 @@ impl MouseButtonDriver {
         }
         self.hold_started_at = vec2(x, y);
         self.duration = 0.0;
+    }
+}
+
+impl MouseButtonDriver {
+    pub fn started_holding(&self) -> Option<Vec2> {
+        self.hold_started_this_frame.then_some(self.hold_started_at)
+    }
+
+    pub fn held(&self) -> Option<(Vec2, f32)> {
+        (self.held && self.duration >= HOLD_DURATION)
+            .then_some((self.hold_started_at, self.duration))
+    }
+
+    pub fn double_clicked(&self) -> bool {
+        self.successive_clicks == 2 && self.held
     }
 }
 
@@ -118,20 +125,12 @@ impl InputDriver {
 
 #[allow(dead_code)]
 impl InputDriver {
-    pub fn rmb_doubleclick(&self) -> bool {
-        self.mouse_buttons[&MouseButton::Right].double_clicked()
+    pub fn rmb(&self) -> &MouseButtonDriver {
+        &self.mouse_buttons[&MouseButton::Right]
     }
 
-    pub fn lmb_doubleclick(&self) -> bool {
-        self.mouse_buttons[&MouseButton::Left].double_clicked()
-    }
-
-    pub fn rmb_hold(&self) -> Option<(Vec2, f32)> {
-        self.mouse_buttons[&MouseButton::Right].held()
-    }
-
-    pub fn lmb_hold(&self) -> Option<(Vec2, f32)> {
-        self.mouse_buttons[&MouseButton::Left].held()
+    pub fn lmb(&self) -> &MouseButtonDriver {
+        &self.mouse_buttons[&MouseButton::Left]
     }
 
     pub fn mouse_delta(&self) -> Vec2 {

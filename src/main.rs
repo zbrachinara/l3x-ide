@@ -105,7 +105,7 @@ async fn main() {
             state.offset += state.input_driver.mouse_delta();
         }
 
-        if state.input_driver.lmb_doubleclick() {
+        if state.input_driver.lmb().double_clicked() {
             state.matrix.edit(logical.as_ivec2());
         }
         if is_key_pressed(KeyCode::Escape) {
@@ -120,7 +120,7 @@ async fn main() {
             state.sound_handle.update(Chord::default()).unwrap()
         }
 
-        if state.input_driver.lmb_hold().is_some() {
+        if state.input_driver.lmb().held().is_some() {
             state
                 .matrix
                 .set_dims((logical + Vec2::splat(0.5)).as_ivec2())
