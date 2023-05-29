@@ -30,6 +30,18 @@ function give_user_csv(filename, text) {
 const audio_ctx = new AudioContext();
 var oscillators = []
 
+const file_input = document.getElementById("file_input")
+var stored_file = null
+const store_imported_file = function () {
+  [f] = this.files // input element is specified to contain exactly one file
+  let reader = new FileReader()
+  reader.onload = (e) => {
+    stored_file = e.target.result
+  }
+  reader.readAsArrayBuffer(f);
+}
+file_input.addEventListener("change", store_imported_file, false)
+
 register_plugin = function (importObject) {
   // logging
   importObject.env.wasm_log_error = function (ptr, len) {
@@ -73,6 +85,20 @@ register_plugin = function (importObject) {
     let filename = get_string(filename_ptr, filename_len)
     let data = get_string(data_ptr, data_len)
     give_user_csv(filename, data)
+  }
+  importObject.env.wasm_request_file_import = function () {
+    file_input.click()
+  }
+  importObject.env.wasm_file_import_len = function () {
+    if (!stored_file) {
+      return 0
+    } else {
+      return stored_file.byteLength
+    }
+  }
+  importObject.env.wasm_import_file = function (load_to) {
+    getUint8Memory().set(stored_file, load_to)
+    stored_file = null
   }
 }
 

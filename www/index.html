@@ -18,7 +18,8 @@
             z-index: 0;
         }
 
-        a {
+        a,
+        input {
             display: 'none';
         }
     </style>
@@ -26,6 +27,7 @@
 
 <body>
     <canvas id="glcanvas" tabindex='1'></canvas>
+    <input type="file" id="file_input" accept="text/*">
     <!-- Minified and statically hosted version of https://github.com/not-fl3/macroquad/blob/master/js/mq_js_bundle.js -->
     <script src="mq_js_bundle.js"></script>
     <script src="l3x-utils.js"></script>

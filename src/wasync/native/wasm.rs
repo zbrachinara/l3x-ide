@@ -7,6 +7,10 @@ extern "C" {
         data: *const u8,
         data_len: usize,
     );
+
+    fn wasm_request_file_import();
+    fn wasm_file_import_len() -> usize;
+    fn wasm_import_file(buf: *mut u8);
 }
 
 /// # Safety
@@ -33,12 +37,25 @@ impl<'a> AsyncContext<'a> {
     }
 
     pub fn try_open_file(&mut self) -> Option<Vec<u8>> {
-        None
+        let length = unsafe {wasm_file_import_len()};
+        if length > 0 {
+            let mut buf = Vec::with_capacity(length);
+            unsafe {
+                wasm_import_file(buf.as_mut_ptr());
+                buf.set_len(length);
+            }
+            log::debug!("{buf:?}");
+            Some(buf)
+        } else {
+            None
+        }
     }
 
-    pub fn try_export_file(&mut self) {}
+    pub fn try_export_file(&mut self) {} // blank on purpose
 
-    pub fn start_file_import(&mut self) {}
+    pub fn start_file_import(&mut self) {
+        unsafe { wasm_request_file_import() };
+    }
 
     pub fn start_file_export(&mut self, data: Vec<u8>) {
         unsafe { give_user_file("l3x-ide_export.csv", &data) }
