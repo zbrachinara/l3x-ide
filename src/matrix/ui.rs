@@ -257,7 +257,7 @@ impl Matrix {
             });
             if ui.button("Export").clicked() {
                 if let Ok(data) = self.export_data() {
-                    ctx.start_file_export(data)
+                    ctx.start_file_export(data, self.mode)
                 }
             };
         });

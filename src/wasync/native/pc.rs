@@ -9,7 +9,7 @@ use crate::matrix::MatrixMode;
 pub struct AsyncContext<'a> {
     executor: async_executor::LocalExecutor<'a>,
     read_file: Option<Task<Option<(Vec<u8>, Option<MatrixMode>)>>>,
-    write_file: Option<Task<Option<FileHandle>>>,
+    write_file: Option<Task<Option<(FileHandle, &'static str)>>>,
     pending_data: Option<Vec<u8>>,
 }
 
@@ -47,9 +47,19 @@ impl<'a> AsyncContext<'a> {
         }
     }
 
-    pub fn start_file_export(&mut self, data: Vec<u8>) {
+    pub fn start_file_export(&mut self, data: Vec<u8>, mode: MatrixMode) {
+        let (filter_name, extension) = match mode {
+            MatrixMode::L3 => ("L3", "l3"),
+            MatrixMode::L3X => ("L3X", "l3x"),
+        };
         if self.write_file.is_none() {
-            self.write_file = Some(self.executor.spawn(rfd::AsyncFileDialog::new().save_file()));
+            self.write_file = Some(self.executor.spawn(async move {
+                let path = rfd::AsyncFileDialog::new()
+                    .add_filter(filter_name, &[extension])
+                    .save_file()
+                    .await;
+                path.map(|p| (p, extension))
+            }));
             self.pending_data = Some(data);
         }
     }
@@ -73,15 +83,18 @@ impl<'a> AsyncContext<'a> {
         if_chain::if_chain! {
             if let Some(ref task) = self.write_file;
             if task.is_finished();
-            if let Some(handle) = futures_lite::future::block_on(
+            if let Some((handle, extension)) = futures_lite::future::block_on(
                 std::mem::take(&mut self.write_file).unwrap()
             );
             then {
+                let mut path = handle.path().to_path_buf();
+                path.set_extension(extension);
+
                 let mut file = match OpenOptions::new()
                     .truncate(false)
                     .write(true)
                     .create(true)
-                    .open(handle.path()) {
+                    .open(path) {
                     Ok(fi) => fi,
                     Err(e) => {
                         log::error!("File could not be opnened: {e}");

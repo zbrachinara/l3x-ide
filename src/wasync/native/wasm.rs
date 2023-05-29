@@ -68,7 +68,11 @@ impl<'a> AsyncContext<'a> {
         unsafe { wasm_request_file_import() };
     }
 
-    pub fn start_file_export(&mut self, data: Vec<u8>) {
-        unsafe { give_user_file("l3x-ide_export.csv", &data) }
+    pub fn start_file_export(&mut self, data: Vec<u8>, mode: MatrixMode) {
+        let name = match mode {
+            MatrixMode::L3 => "l3x-ide_export.l3",
+            MatrixMode::L3X => "l3x-ide_export.l3x",
+        };
+        unsafe { give_user_file(name, &data) }
     }
 }
