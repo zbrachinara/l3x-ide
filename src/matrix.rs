@@ -1,4 +1,3 @@
-use if_chain::if_chain;
 use itertools::Itertools;
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
@@ -53,11 +52,46 @@ impl MatrixMode {
     }
 }
 
+/// Defines the selected area on which to operate, start and end inclusive
+#[derive(Clone, Copy)]
+pub struct Selection {
+    starts: IVec2,
+    ends: IVec2,
+}
+
+impl From<IVec2> for Selection {
+    fn from(value: IVec2) -> Self {
+        Self {
+            starts: value,
+            ends: value,
+        }
+    }
+}
+
+impl Selection {
+    fn rect(&self, offset: Vec2, cell_size: f32, scale: f32) -> Rect {
+        let starts = (self.starts.as_vec2() * cell_size + offset) * scale;
+        let size = ((self.ends + IVec2::ONE - self.starts).as_vec2() * cell_size) * scale;
+        Rect::new(starts.x, starts.y, size.x, size.y)
+    }
+
+    fn transpose(self) -> Self {
+        Self {
+            starts: self.starts.yx(),
+            ends: self.ends.yx(),
+        }
+    }
+
+    fn contains(&self, location: IVec2) -> bool {
+        self.starts.cmple(location).all() && self.ends.cmpge(location).all()
+    }
+}
+
 pub struct Matrix {
     mode: MatrixMode,
     instructions: HashMap<IVec2, L3X>,
     pub dims: UVec2,
-    selecting: Option<IVec2>,
+    selecting: Option<Selection>,
     selecting_text: String,
     period: usize,
     stepping: bool,
@@ -143,13 +177,9 @@ impl Matrix {
         }
 
         // highlight selected square
-        if_chain! {
-            if let Some(location) = self.selecting;
-            if location.cmplt(self.dims.as_ivec2()).all();
-            then {
-                let lower = (location.as_vec2() * cell_size) + offset;
-                draw_rectangle(lower.x, lower.y, cell_size, cell_size, LIGHTGRAY);
-            }
+        if let Some(range) = self.selecting {
+            let r = range.rect(offset, cell_size, scale); // TODO restrict rect to bounds of matrix
+            draw_rectangle(r.x, r.y, r.w, r.h, LIGHTGRAY)
         }
 
         // box around the matrix
@@ -244,7 +274,11 @@ impl Matrix {
     }
 
     fn is_editing_input_stream(&self) -> bool {
-        self.mode == MatrixMode::L3X && self.selecting == Some(ivec2(1, 0))
+        self.mode == MatrixMode::L3X
+            && self
+                .selecting
+                .map(|u| u.contains(ivec2(1, 0)))
+                .unwrap_or(false)
     }
 
     pub fn set_dims(&mut self, dims: IVec2) {
@@ -253,16 +287,18 @@ impl Matrix {
         }
     }
 
-    pub fn edit(&mut self, location: IVec2) {
-        if location.cmpge(IVec2::ZERO).all() && location.cmplt(self.dims.as_ivec2()).all() {
+    pub fn edit(&mut self, location: Selection) {
+        if location.starts.cmpge(IVec2::ZERO).all()
+            && location.ends.cmplt(self.dims.as_ivec2()).all()
+        {
             let location = location;
             self.focus_editing = true;
             self.selecting = Some(location);
             self.selecting_text = self
                 .instructions
-                .get(&location)
+                .get(&location.starts)
                 .map(|l3x| l3x.to_string())
-                .unwrap_or("".to_string());
+                .unwrap_or("".to_string()); // TODO only do this when selecting a single cell
         }
     }
 
@@ -285,7 +321,7 @@ impl Matrix {
             .collect();
         self.instructions = instructions_new;
         if let Some(selecting) = self.selecting {
-            self.edit(selecting.yx())
+            self.edit(selecting.transpose())
         }
     }
 

@@ -113,7 +113,7 @@ async fn main() {
         }
 
         if state.input_driver.lmb().double_clicked() {
-            state.matrix.edit(logical.as_ivec2());
+            state.matrix.edit(logical.as_ivec2().into());
         }
         if is_key_pressed(KeyCode::Escape) {
             state.matrix.stop_edit();

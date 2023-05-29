@@ -304,14 +304,16 @@ impl Matrix {
         ui.collapsing_open("Matrix editing", |ui| {
             self.ui_edit_matrix(ui);
             if let Some(location) = self.selecting {
-                ui.scope(|ui| self.ui_cell_value_view(ui, location));
+                ui.scope(|ui| self.ui_cell_value_view(ui, location.starts));
             }
         });
 
         if let Some(location) = self.selecting {
             if self.simulating {
                 ui.separator();
-                ui.collapsing_open("Travelers", |ui| self.ui_cell_traveler_view(ui, location));
+                ui.collapsing_open("Travelers", |ui| {
+                    self.ui_cell_traveler_view(ui, location.starts)
+                });
             }
         }
 
