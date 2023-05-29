@@ -70,7 +70,7 @@ pub struct Matrix {
     output: Option<Registers>,
     output_stream: Vec<Registers>,
 
-    focus_editing: u8,
+    focus_editing: bool,
 
     single_input: UiSingleInput,
     stream_input: UiStreamInput,
@@ -96,7 +96,7 @@ impl Default for Matrix {
             travelers: Default::default(),
             output: Default::default(),
             output_stream: Default::default(),
-            focus_editing: 0,
+            focus_editing: false,
             single_input: Default::default(),
             stream_input: Default::default(),
             simulating: false,
@@ -256,7 +256,7 @@ impl Matrix {
     pub fn edit(&mut self, location: IVec2) {
         if location.cmpge(IVec2::ZERO).all() && location.cmplt(self.dims.as_ivec2()).all() {
             let location = location;
-            self.focus_editing = 4;
+            self.focus_editing = true;
             self.selecting = Some(location);
             self.selecting_text = self
                 .instructions

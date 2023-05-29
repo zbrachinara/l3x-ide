@@ -178,13 +178,12 @@ impl Matrix {
         ui.label(format!("at location {location}"));
         ui.horizontal(|ui| {
             let textedit = ui.text_edit_singleline(&mut self.selecting_text);
-            match self.focus_editing {
-                x if x > 1 => self.focus_editing -= 1,
-                1 => {
-                    textedit.request_focus();
-                    self.focus_editing -= 1;
+            if self.focus_editing {
+                if textedit.has_focus() {
+                    self.focus_editing = false;
+                } else {
+                    textedit.request_focus()
                 }
-                _ => (),
             }
             if textedit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                 if let Ok(serialize_success) = L3X::try_from(self.selecting_text.as_str()) {
