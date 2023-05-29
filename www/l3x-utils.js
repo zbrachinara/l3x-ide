@@ -32,11 +32,28 @@ var oscillators = []
 
 const file_input = document.getElementById("file_input")
 var stored_file = null
+var stored_file_extension_type = null
+
+/// returns 1 if l3, 2 if l3x, any other code means unknown
+const l3x_extension = function(extension) {
+    if (!!extension) {
+        if (extension === 'l3') {
+            return 1;
+        } else if (extension === 'l3x') {
+            return 2;
+        }
+    }
+
+    return 0;
+}
+
 const store_imported_file = function () {
     [f] = this.files // input element is specified to contain exactly one file
+    let extension_local = l3x_extension(f.name.split('.')[1]);
     let reader = new FileReader()
     reader.onload = (e) => {
         stored_file = new Uint8Array(e.target.result)
+        stored_file_extension_type = extension_local
     }
     reader.readAsArrayBuffer(f);
 }
@@ -96,8 +113,12 @@ register_plugin = function (importObject) {
             return stored_file.byteLength
         }
     }
+    importObject.env.wasm_file_import_type = function() {
+        return stored_file_extension_type
+    }
     importObject.env.wasm_import_file = function (load_to) {
         getUint8Memory().set(stored_file, load_to)
+        stored_file_extension_type = null
         stored_file = null
     }
 }

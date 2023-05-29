@@ -1,14 +1,26 @@
-use std::{fs::OpenOptions, io::Write};
+use std::{ffi::OsStr, fs::OpenOptions, io::Write};
 
 use async_executor::Task;
 use rfd::FileHandle;
 
+use crate::matrix::MatrixMode;
+
 #[derive(Default)]
 pub struct AsyncContext<'a> {
     executor: async_executor::LocalExecutor<'a>,
-    read_file: Option<Task<Option<Vec<u8>>>>,
+    read_file: Option<Task<Option<(Vec<u8>, Option<MatrixMode>)>>>,
     write_file: Option<Task<Option<FileHandle>>>,
     pending_data: Option<Vec<u8>>,
+}
+
+fn l3x_extension(ext: &OsStr) -> Option<MatrixMode> {
+    if ext == "l3" {
+        Some(MatrixMode::L3)
+    } else if ext == "l3x" {
+        Some(MatrixMode::L3X)
+    } else {
+        None
+    }
 }
 
 impl<'a> AsyncContext<'a> {
@@ -21,7 +33,10 @@ impl<'a> AsyncContext<'a> {
             self.read_file = Some(self.executor.spawn(async {
                 let file = rfd::AsyncFileDialog::new().pick_file().await;
                 match file {
-                    Some(fi) => Some(fi.read().await),
+                    Some(fi) => Some((
+                        fi.read().await,
+                        fi.path().extension().and_then(l3x_extension),
+                    )),
                     None => None,
                 }
             }));
@@ -35,7 +50,7 @@ impl<'a> AsyncContext<'a> {
         }
     }
 
-    pub fn try_open_file(&mut self) -> Option<Vec<u8>> {
+    pub fn try_open_file(&mut self) -> Option<(Vec<u8>, Option<MatrixMode>)> {
         if_chain::if_chain! {
             if let Some(ref task) = self.read_file;
             if task.is_finished();

@@ -1,5 +1,7 @@
 use std::marker::PhantomData;
 
+use crate::matrix::MatrixMode;
+
 extern "C" {
     fn wasm_give_user_file(
         filename_ptr: *const u8,
@@ -10,6 +12,7 @@ extern "C" {
 
     fn wasm_request_file_import();
     fn wasm_file_import_len() -> usize;
+    fn wasm_file_import_type() -> usize;
     fn wasm_import_file(buf: *mut u8);
 }
 
@@ -26,6 +29,14 @@ unsafe fn give_user_file(filename: &str, data: &[u8]) {
     )
 }
 
+fn file_import_type() -> Option<MatrixMode> {
+    match unsafe { wasm_file_import_type() } {
+        1 => Some(MatrixMode::L3),
+        2 => Some(MatrixMode::L3X),
+        _ => None,
+    }
+}
+
 #[derive(Default)]
 pub struct AsyncContext<'a> {
     _data: PhantomData<&'a ()>,
@@ -36,15 +47,16 @@ impl<'a> AsyncContext<'a> {
         true
     }
 
-    pub fn try_open_file(&mut self) -> Option<Vec<u8>> {
+    pub fn try_open_file(&mut self) -> Option<(Vec<u8>, Option<MatrixMode>)> {
         let length = unsafe { wasm_file_import_len() };
         if length > 0 {
             let mut buf = Vec::with_capacity(length);
+            let ty = file_import_type();
             unsafe {
                 wasm_import_file(buf.as_mut_ptr());
                 buf.set_len(length);
             }
-            Some(buf)
+            Some((buf, ty))
         } else {
             None
         }

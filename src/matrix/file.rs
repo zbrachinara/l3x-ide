@@ -10,12 +10,12 @@ use crate::{
     wasync::AsyncContext,
 };
 
-use super::Matrix;
+use super::{Matrix, MatrixMode};
 
 impl Matrix {
     pub fn try_import_data(&mut self, ctx: &mut AsyncContext) {
-        if let Some(data) = ctx.try_open_file() {
-            self.import_data(&data)
+        if let Some((data, ext)) = ctx.try_open_file() {
+            self.import_data(&data, ext)
         }
     }
 }
@@ -46,7 +46,7 @@ impl Matrix {
         }
     }
 
-    fn import_data(&mut self, data: &[u8]) {
+    fn import_data(&mut self, data: &[u8], extension: Option<MatrixMode>) {
         let mut reader = ReaderBuilder::new().has_headers(false).from_reader(data);
         let array = match reader.deserialize_array2_dynamic::<String>() {
             Ok(a) => a,
@@ -86,5 +86,6 @@ impl Matrix {
 
         self.instructions = instruction_buffer;
         self.dims = (max_loc + IVec2::ONE).as_uvec2();
+        self.mode = extension.unwrap_or(MatrixMode::L3)
     }
 }
