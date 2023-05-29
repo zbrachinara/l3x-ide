@@ -31,7 +31,11 @@ impl<'a> AsyncContext<'a> {
     pub fn start_file_import(&mut self) {
         if self.read_file.is_none() {
             self.read_file = Some(self.executor.spawn(async {
-                let file = rfd::AsyncFileDialog::new().pick_file().await;
+                let file = rfd::AsyncFileDialog::new()
+                    .add_filter("L3X File", &["l3x", "l3"])
+                    .add_filter("CSV", &["csv"])
+                    .pick_file()
+                    .await;
                 match file {
                     Some(fi) => Some((
                         fi.read().await,
