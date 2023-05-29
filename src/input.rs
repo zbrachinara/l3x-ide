@@ -5,15 +5,41 @@ use macroquad::{miniquad::EventHandler, prelude::*};
 const HOLD_DURATION: f32 = 0.3;
 const CLICK_SPEED: f32 = 0.2;
 
+#[derive(PartialEq, Default, Clone, Copy)]
+enum HoldState {
+    #[default]
+    None,
+    JustSeen,
+    Holding,
+}
+
+impl HoldState {
+    fn update(self, press_state: bool) -> Self {
+        if press_state {
+            match self {
+                Self::None => Self::JustSeen,
+                Self::JustSeen | Self::Holding => Self::Holding,
+            }
+        } else {
+            Self::None
+        }
+    }
+
+    fn holding(&self) -> bool {
+        matches!(self, Self::JustSeen | Self::Holding)
+    }
+}
+
 #[derive(Default)]
 pub struct MouseButtonDriver {
     successive_clicks: u32,
-    held: bool,
+    pressed: bool,
     /// If [held] is true, this refers to how long the button has been held. If [held] is false, this
     /// refers to how long the button has been released
     duration: f32,
     hold_started_at: Vec2,
-    hold_started_this_frame: bool,
+    press_started_this_frame: bool,
+    hold_state: HoldState,
 }
 
 /// Private functions which facilitate updating the driver's internal state
@@ -23,41 +49,47 @@ impl MouseButtonDriver {
         if self.duration > CLICK_SPEED {
             self.successive_clicks = 0;
         }
-        if self.hold_started_this_frame && over_ui {
+        if self.press_started_this_frame && over_ui {
             self.successive_clicks = 0;
             self.duration = 0.;
-            self.held = false;
+            self.pressed = false;
         }
         self.duration += frame_time;
 
         log::trace!("duration: {}", self.duration);
-        log::trace!("held: {}", self.held);
-        self.hold_started_this_frame = false;
+        log::trace!("held: {}", self.pressed);
+        self.press_started_this_frame = false;
+        self.hold_state = self.hold_state.update(self.satsifies_hold())
     }
 
     fn listen_event(&mut self, pressed: bool, x: f32, y: f32) {
-        self.held = pressed;
+        self.pressed = pressed;
         if pressed {
             self.successive_clicks += 1;
-            self.hold_started_this_frame = true;
+            self.press_started_this_frame = true;
         }
         self.hold_started_at = vec2(x, y);
         self.duration = 0.0;
+    }
+
+    fn satsifies_hold(&self) -> bool {
+        self.pressed && self.duration >= HOLD_DURATION
     }
 }
 
 impl MouseButtonDriver {
     pub fn started_holding(&self) -> Option<Vec2> {
-        self.hold_started_this_frame.then_some(self.hold_started_at)
+        (self.hold_state == HoldState::JustSeen).then_some(self.hold_started_at)
     }
 
     pub fn held(&self) -> Option<(Vec2, f32)> {
-        (self.held && self.duration >= HOLD_DURATION)
+        self.hold_state
+            .holding()
             .then_some((self.hold_started_at, self.duration))
     }
 
     pub fn double_clicked(&self) -> bool {
-        self.successive_clicks == 2 && self.held
+        self.successive_clicks == 2 && self.pressed
     }
 }
 
