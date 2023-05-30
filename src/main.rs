@@ -33,6 +33,7 @@ struct Model<'a> {
     sound_handle: Updater,
     sound_needs_killing: bool,
     resizing_matrix: bool,
+    resizing_selection: bool,
     ctx: AsyncContext<'a>,
 }
 
@@ -46,8 +47,15 @@ impl<'a> Default for Model<'a> {
             sound_needs_killing: false,
             sound_handle: Updater::default(),
             resizing_matrix: false,
+            resizing_selection: false,
             ctx: Default::default(),
         }
+    }
+}
+
+impl<'a> Model<'a> {
+    fn logical_from_physical(&self, physical: Vec2) -> Vec2 {
+        (physical / self.scale - self.offset) / CELL_SIZE
     }
 }
 
@@ -101,11 +109,15 @@ async fn main() {
             const ALLOWED_DISTANCE: f32 = 15.;
             if corner_position.distance_squared(pos) < (ALLOWED_DISTANCE * state.scale).powi(2) {
                 state.resizing_matrix = true;
+            } else if pos.cmpgt(state.offset).all() && pos.cmplt(corner_position).all() {
+                state
+                    .matrix
+                    .edit(state.logical_from_physical(pos).as_ivec2().into());
+                state.resizing_selection = true;
             }
         }
 
-        let logical =
-            (Vec2::from(mouse_position()) - state.offset * state.scale) / (CELL_SIZE * state.scale);
+        let logical = state.logical_from_physical(Vec2::from(mouse_position()));
 
         // panning
         if is_mouse_button_down(MouseButton::Right) {
@@ -134,6 +146,14 @@ async fn main() {
                     .set_dims((logical + Vec2::splat(0.5)).as_ivec2())
             } else {
                 state.resizing_matrix = false;
+            }
+        }
+
+        if state.resizing_selection {
+            if state.input_driver.lmb().held().is_some() {
+                state.matrix.set_selection_end(logical.as_ivec2())
+            } else {
+                state.resizing_selection = false;
             }
         }
 

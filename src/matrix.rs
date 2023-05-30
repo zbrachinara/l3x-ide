@@ -287,6 +287,14 @@ impl Matrix {
         }
     }
 
+    pub fn set_selection_end(&mut self, end: IVec2) {
+        if let Some(sel) = self.selecting.as_mut() {
+            if sel.starts.cmple(end).all() {
+                sel.ends = end;
+            }
+        }
+    }
+
     pub fn edit(&mut self, location: Selection) {
         if location.starts.cmpge(IVec2::ZERO).all()
             && location.ends.cmplt(self.dims.as_ivec2()).all()
