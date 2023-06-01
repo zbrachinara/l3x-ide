@@ -102,22 +102,26 @@ async fn main() {
                     })
                 });
         });
-
+        let logical = state.logical_from_physical(Vec2::from(mouse_position()));
+        let physical = Vec2::from(mouse_position());
+        //Somehow, pos can't be trusted - it scales wrong and produces selection bugs.
+        //I replaced pos with the variable physical, which comes directly from mouse_position instead of a long chain of event-handlers that I can't figure out
+        //It fixes the bug, but I am still not sure of the root cause
         if let Some(pos) = state.input_driver.lmb().started_holding() {
             let corner_position =
                 (state.offset + state.matrix.dims.as_vec2() * CELL_SIZE) * state.scale;
             const ALLOWED_DISTANCE: f32 = 15.;
-            if corner_position.distance_squared(pos) < (ALLOWED_DISTANCE * state.scale).powi(2) {
+            if corner_position.distance_squared(physical) < (ALLOWED_DISTANCE * state.scale).powi(2) {
                 state.resizing_matrix = true;
-            } else if pos.cmpgt(state.offset).all() && pos.cmplt(corner_position).all() {
+            } else if physical.cmpgt(state.offset).all() && physical.cmplt(corner_position).all() {
                 state
                     .matrix
-                    .edit(state.logical_from_physical(pos).as_ivec2().into());
+                    .edit(logical.as_ivec2().into());
                 state.resizing_selection = true;
             }
         }
 
-        let logical = state.logical_from_physical(Vec2::from(mouse_position()));
+        
 
         // panning
         if is_mouse_button_down(MouseButton::Right) {
