@@ -22,7 +22,7 @@ macro_rules! arrayvec {
     );
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug,Clone)]
 pub struct L3X {
     // TODO support watch points
     pub direction: Direction,
@@ -41,7 +41,7 @@ impl DirectionIter {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug,Clone)]
 pub enum L3XCommand {
     Multiply(Registers),
     Duplicate,
@@ -71,6 +71,21 @@ impl From<MaybeL3X> for Option<L3X> {
             MaybeL3X::Some(v) => Some(v),
             MaybeL3X::None => None,
         }
+    }
+}
+impl From<Option<L3X>> for MaybeL3X {
+    fn from(value:Option<L3X>) -> Self {
+        match value {
+            None=>MaybeL3X::None,
+            Some(v)=>MaybeL3X::Some(v)
+        }
+    }
+}
+impl MaybeL3X {
+    pub fn optionalTake(&mut self) -> MaybeL3X {
+        let mut res=MaybeL3X::None;
+        std::mem::swap(&mut res,self);
+        res
     }
 }
 
