@@ -60,8 +60,10 @@ pub enum L3XParseError {
     Empty,
 }
 
+#[derive(Default)]
 pub enum MaybeL3X {
     Some(L3X),
+    #[default]
     None,
 }
 
@@ -79,13 +81,6 @@ impl From<Option<L3X>> for MaybeL3X {
             None=>MaybeL3X::None,
             Some(v)=>MaybeL3X::Some(v)
         }
-    }
-}
-impl MaybeL3X {
-    pub fn optionalTake(&mut self) -> MaybeL3X {
-        let mut res=MaybeL3X::None;
-        std::mem::swap(&mut res,self);
-        res
     }
 }
 
