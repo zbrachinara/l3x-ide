@@ -381,6 +381,10 @@ impl Matrix {
         self.selecting = None;
     }
 
+    pub fn finalize_resize(&mut self) {
+        self.apply(MatrixAction::Resize(self.dims));
+    }
+
     fn init_simulation_inner(&mut self) -> Option<()> {
         self.travelers.push(Traveler {
             value: self.single_input.value().clone(),

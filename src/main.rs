@@ -149,6 +149,7 @@ async fn main() {
                     .matrix
                     .set_dims((logical + Vec2::splat(0.5)).as_ivec2())
             } else {
+                state.matrix.finalize_resize();
                 state.resizing_matrix = false;
             }
         }
