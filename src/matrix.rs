@@ -5,6 +5,7 @@ use std::{
     collections::{HashMap, HashSet, VecDeque},
     ops::Index,
 };
+use tap::Tap;
 use vec_drain_where::VecDrainWhereExt;
 
 mod file;
@@ -368,17 +369,7 @@ impl Matrix {
         let instructions_new: HashMap<_, _> = self
             .instructions
             .drain()
-            .map(|(mut k, mut v)| {
-                k = k.yx();
-                v.direction = match v.direction {
-                    Direction::Up => Direction::Left,
-                    Direction::Down => Direction::Right,
-                    Direction::Left => Direction::Up,
-                    Direction::Right => Direction::Down,
-                };
-
-                (k, v)
-            })
+            .map(|(k, v)| (k.yx(), v.tap_mut(|v| v.direction = v.direction.opposite())))
             .collect();
         self.instructions = instructions_new;
         if let Some(selecting) = self.selecting {
