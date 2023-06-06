@@ -84,7 +84,13 @@ impl From<Option<L3X>> for MaybeL3X {
         }
     }
 }
-
+impl MaybeL3X {
+    pub fn optionalTake(&mut self) -> MaybeL3X {
+        let mut res=MaybeL3X::None;
+        std::mem::swap(&mut res,self);
+        res
+    }
+}
 impl Direction {
     pub fn opposite(&self) -> Self {
         match self {
