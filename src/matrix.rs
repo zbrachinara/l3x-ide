@@ -1,14 +1,18 @@
 use itertools::Itertools;
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
-use std::{collections::{HashMap, HashSet, VecDeque}, ops::Index};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    ops::Index,
+};
+use tap::Tap;
 use vec_drain_where::VecDrainWhereExt;
 
 mod file;
 mod ui;
 use core::cmp::{max,min};
 use crate::{
-    l3x::{Direction, L3XCommand, L3X,MaybeL3X},
+    l3x::{Direction, L3XCommand, MaybeL3X, L3X},
     registers::Registers,
     sound::chord::Chord,
     swapbuffer::SwapBuffer,
@@ -54,66 +58,49 @@ impl MatrixMode {
 #[derive(Clone)]
 struct L3XData {
     data: Vec<Vec<MaybeL3X>>,
-    dims: UVec2
+    dims: UVec2,
 }
 impl Index<UVec2> for L3XData {
-    type Output=MaybeL3X;
-    fn index(&self, index:UVec2) ->&MaybeL3X{
+    type Output = MaybeL3X;
+    fn index(&self, index: UVec2) -> &MaybeL3X {
         &self.data[index.y as usize][index.x as usize]
     }
 }
 impl std::ops::IndexMut<UVec2> for L3XData {
-    fn index_mut(&mut self, index:UVec2) ->&mut MaybeL3X{
+    fn index_mut(&mut self, index: UVec2) -> &mut MaybeL3X {
         &mut self.data[index.y as usize][index.x as usize]
     }
 }
-/* 
-impl L3XData {
-    fn transpose(&mut self) {
-        self.dims=self.dims.yx();
-        let mut res = vec![];
-        for _ in 0..self.dims.y {
-            res.push(vec![]);
-        }
-        for row in self.data.iter_mut() {
-            for (i,element) in row.iter_mut().enumerate() {
-                let o:Option<L3X> = Option::<L3X>::from(element.optionalTake());
-                
-                res[i].push(MaybeL3X::from(o.map(|mut c| {c.direction=c.direction.transpose(); c})))
-            }
-        }
-        self.data=res;
-    }
-    fn reflectV(&mut self) {
-        self.data=
-    }
-}*/
 //all should be copy except paste - I don't think this is possible
 enum MatrixAction {
     Resize(UVec2),
-    Swap(Selection,IVec2),
+    Swap(Selection, IVec2),
     ReflectH(Selection),
     ReflectV(Selection),
-    Paste(IVec2,L3XData),
-    Transpose(Selection)
+    Paste(IVec2, L3XData),
+    Transpose(Selection),
 }
 use crate::matrix::MatrixAction::*;
-fn toSigned(i: UVec2) -> IVec2 {
-    IVec2{x: i.x as i32, y: i.y as i32}
-}
+
 impl MatrixAction {
-    fn inverse(&self, currentState: &mut Matrix) ->MatrixAction {
+    fn inverse(&self, current_state: &mut Matrix) -> MatrixAction {
         match self {
             //put the size back to what it was
-            Resize(dims) => Resize(currentState.dims),
+            Resize(_) => Resize(current_state.dims),
             //paste back what used to be in that spot
-            Paste(start,data) => {Paste(*start,currentState.snip(Selection {starts: *start, ends: *start+toSigned(data.dims)-ivec2(1,1)}))}
+            Paste(start, data) => Paste(
+                *start,
+                current_state.snip(Selection {
+                    starts: *start,
+                    ends: *start + data.dims.as_ivec2()-ivec2(1,1),
+                }),
+            ),
             //all other transformations are self-inverting
             //but we can't do a match all because we have to manually copy these
-            Swap(s,i) => Swap(*s,*i),
+            Swap(s, i) => Swap(*s, *i),
             ReflectH(s) => ReflectH(*s),
-            ReflectV(s) =>ReflectV(*s),
-            Transpose(s) =>Transpose(*s)
+            ReflectV(s) => ReflectV(*s),
+            Transpose(s) => Transpose(*s),
         }
     }
 }
@@ -397,11 +384,7 @@ impl Matrix {
         let instructions_new: HashMap<_, _> = self
             .instructions
             .drain()
-            .map(|(mut k, mut v)| {
-                k = k.yx();
-                v.direction = v.direction.transpose();
-                (k, v)
-            })
+            .map(|(k, v)| (k.yx(), v.tap_mut(|v| v.direction = v.direction.opposite())))
             .collect();
         self.instructions = instructions_new;
         if let Some(selecting) = self.selecting {
@@ -411,6 +394,10 @@ impl Matrix {
 
     pub fn stop_edit(&mut self) {
         self.selecting = None;
+    }
+
+    pub fn finalize_resize(&mut self) {
+        self.apply(MatrixAction::Resize(self.dims));
     }
 
     fn init_simulation_inner(&mut self) -> Option<()> {
@@ -571,20 +558,30 @@ impl Matrix {
 
         Ok(())
     }
-    fn snip(&mut self,range:Selection) -> L3XData {
+    fn snip(&mut self, range: Selection) -> L3XData {
         let mut res=vec![];
         for i in range.starts.y..range.ends.y+1 {
             let mut row = vec![];
             for j in range.starts.x..range.ends.x+1 {
-                row.push(MaybeL3X::from(self.instructions.remove(&IVec2::from((j,i)))));
+                row.push(MaybeL3X::from(
+                    self.instructions.remove(&IVec2::from((j,i)))
+                ));
             }
             res.push(row);
         }
-        L3XData {data:res,dims:UVec2::from((range.width() as u32,range.height() as u32))}
+        L3XData {
+            data: res,
+            dims: UVec2::from((
+                range.width() as u32,
+                range.height() as u32
+            ))
+        }
     }
     fn apply_raw(&mut self, a: MatrixAction) {
         match a {
-            Resize(dims) => {self.dims=dims;},
+            Resize(dims) => {
+                self.dims=dims;
+            },
             Swap(selection,target) => {
                 {
                     for i in 0..selection.height() {
