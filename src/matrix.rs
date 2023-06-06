@@ -6,7 +6,7 @@ use vec_drain_where::VecDrainWhereExt;
 
 mod file;
 mod ui;
-
+use core::cmp::{max,min};
 use crate::{
     l3x::{Direction, L3XCommand, L3X,MaybeL3X},
     registers::Registers,
@@ -51,6 +51,7 @@ impl MatrixMode {
         }
     }
 }
+#[derive(Clone)]
 struct L3XData {
     data: Vec<Vec<MaybeL3X>>,
     dims: UVec2
@@ -66,6 +67,27 @@ impl std::ops::IndexMut<UVec2> for L3XData {
         &mut self.data[index.y as usize][index.x as usize]
     }
 }
+/* 
+impl L3XData {
+    fn transpose(&mut self) {
+        self.dims=self.dims.yx();
+        let mut res = vec![];
+        for _ in 0..self.dims.y {
+            res.push(vec![]);
+        }
+        for row in self.data.iter_mut() {
+            for (i,element) in row.iter_mut().enumerate() {
+                let o:Option<L3X> = Option::<L3X>::from(element.optionalTake());
+                
+                res[i].push(MaybeL3X::from(o.map(|mut c| {c.direction=c.direction.transpose(); c})))
+            }
+        }
+        self.data=res;
+    }
+    fn reflectV(&mut self) {
+        self.data=
+    }
+}*/
 //all should be copy except paste - I don't think this is possible
 enum MatrixAction {
     Resize(UVec2),
@@ -85,7 +107,7 @@ impl MatrixAction {
             //put the size back to what it was
             Resize(dims) => Resize(currentState.dims),
             //paste back what used to be in that spot
-            Paste(start,data) => {Paste(*start,currentState.snip(Selection {starts: *start, ends: *start+toSigned(data.dims)}))}
+            Paste(start,data) => {Paste(*start,currentState.snip(Selection {starts: *start, ends: *start+toSigned(data.dims)-ivec2(1,1)}))}
             //all other transformations are self-inverting
             //but we can't do a match all because we have to manually copy these
             Swap(s,i) => Swap(*s,*i),
@@ -121,8 +143,8 @@ impl Selection {
 
     fn transpose(self) -> Self {
         Self {
-            starts: self.starts.yx(),
-            ends: self.ends.yx(),
+            starts: self.starts,
+            ends: (self.ends-self.starts).yx()+self.starts,
         }
     }
 
@@ -134,6 +156,12 @@ impl Selection {
             starts: newStart,
             ends: newStart+self.ends-self.starts
         }
+    }
+    fn width(&self) -> i32{
+        self.ends.x-self.starts.x+1
+    }
+    fn height(&self) -> i32{
+        self.ends.y-self.starts.y+1
     }
 }
 
@@ -164,6 +192,7 @@ pub struct Matrix {
     global_volume: u8,
     gridlines: bool,
     history:Vec<MatrixAction>,
+    copy_data:Option<L3XData>
 }
 
 impl Default for Matrix {
@@ -189,7 +218,8 @@ impl Default for Matrix {
             global_volume: 80,
             gridlines: false,
             time: 0,
-            history:vec![]
+            history:vec![],
+            copy_data:None
         }
     }
 }
@@ -369,13 +399,7 @@ impl Matrix {
             .drain()
             .map(|(mut k, mut v)| {
                 k = k.yx();
-                v.direction = match v.direction {
-                    Direction::Up => Direction::Left,
-                    Direction::Down => Direction::Right,
-                    Direction::Left => Direction::Up,
-                    Direction::Right => Direction::Down,
-                };
-
+                v.direction = v.direction.transpose();
                 (k, v)
             })
             .collect();
@@ -549,56 +573,81 @@ impl Matrix {
     }
     fn snip(&mut self,range:Selection) -> L3XData {
         let mut res=vec![];
-        for i in range.starts.y..range.ends.y {
+        for i in range.starts.y..range.ends.y+1 {
             let mut row = vec![];
-            for j in range.starts.x..range.ends.x {
-                row.push(MaybeL3X::from(self.instructions.remove(&IVec2::from((i,j)))));
+            for j in range.starts.x..range.ends.x+1 {
+                row.push(MaybeL3X::from(self.instructions.remove(&IVec2::from((j,i)))));
             }
             res.push(row);
         }
-        L3XData {data:res,dims:UVec2::from(((range.ends.x-range.starts.x) as u32,(range.ends.y-range.starts.y) as u32))}
+        L3XData {data:res,dims:UVec2::from((range.width() as u32,range.height() as u32))}
     }
-    fn apply(&mut self, a: MatrixAction) {
-        let inverse=a.inverse(self);
+    fn apply_raw(&mut self, a: MatrixAction) {
         match a {
             Resize(dims) => {self.dims=dims;},
             Swap(selection,target) => {
-                self.switchValues(selection, |v| target+v-selection.starts);
+                {
+                    for i in 0..selection.height() {
+                        for j in 0..selection.width() {
+                            self.swap_and_map(selection.starts+ivec2(j,i), target+ivec2(j,i),|c| c);
+                        }
+                    }
+                };
             },
             ReflectH(selection) => {
-                self.switchValues(selection, |v| ivec2((selection.ends.x-v.x+selection.starts.x).max(v.x), v.y));
+                {
+                    for i in 0..selection.height() {
+                        for j in 0..(selection.width()+1)/2 {
+                            self.swap_and_map(selection.starts+ivec2(j,i), selection.starts+ivec2(selection.width()-j-1, i),|mut c| {c.direction=c.direction.reflectH();c});
+                        }
+                    }
+                };
             },
             ReflectV(selection) => {
-                self.switchValues(selection, |v| ivec2(v.x, (selection.ends.y-v.y+selection.starts.y).max(v.y)));
+                {
+                    for i in 0..(selection.height()+1)/2 {
+                        for j in 0..selection.width() {
+                            self.swap_and_map(selection.starts+ivec2(j,i), selection.starts+ivec2(j, selection.height()-i-1),|mut c| {c.direction=c.direction.reflectV();c});
+                        }
+                    }
+                };
             },
             Transpose(selection) => {
-                self.switchValues(selection, |v| if v.x>v.y {(v-selection.starts).yx()+selection.starts} else {v});
+                {
+                    let width=max(selection.width(),selection.height());
+                    let height=min(selection.width(),selection.height());
+                    println!("{:?}",(width,height));
+                    for i in 0..height {
+                        for j in i..width {
+                            println!("{:?}",(i,j));
+                            self.swap_and_map(selection.starts+ivec2(j,i), selection.starts+ivec2(i,j),|mut c| {c.direction=c.direction.transpose();c});
+                        }
+                    }
+                };
             },
             Paste(target, mut data) => {
                 for i in 0..data.dims.y {
                     for j in 0..data.dims.x {
-                        Option::<L3X>::from(data[uvec2(j,i)].optionalTake()).map_or(self.instructions.remove(&ivec2(j as i32,i as i32)), |c| self.instructions.insert(ivec2(j as i32,i as i32),c));
+                        Option::<L3X>::from(data[uvec2(j,i)].optionalTake()).map_or(self.instructions.remove(&(target+ivec2(j as i32,i as i32))), |c| self.instructions.insert(target+ivec2(j as i32,i as i32),c));
                     }
                 }
             }
         };
+    }
+    fn apply(&mut self, a: MatrixAction) {
+        let inverse=a.inverse(self);
+        self.apply_raw(a);
         self.history.push(inverse);
     }
-    fn switchValues<F:Fn(IVec2)->IVec2>(&mut self, selection:Selection, f: F) {
-        for i in selection.starts.y..selection.ends.y {
-            for j in selection.starts.x..selection.ends.x {
-                hashSwap(&mut self.instructions, &ivec2(j,i), &f(ivec2(j,i)));
-            }
-        }
-    }
+    
     pub fn undo(&mut self) {
         let t=self.history.pop();
-        t.map_or((), |f| self.apply(f))
+        t.map_or((), |f| self.apply_raw(f))
     }
-}
-fn hashSwap<K:std::hash::Hash+std::cmp::Eq,V>(map: &mut HashMap<K,V>,k1:&K,k2:&K) {
-    let e1=map.remove_entry(k1);
-    let e2=map.remove_entry(k2);
-    e1.and_then(|(k,v)| map.insert(k,v));
-    e2.and_then(|(k,v)| map.insert(k,v));
+    fn swap_and_map<F: Fn(L3X)->L3X>(&mut self,k1:IVec2,k2:IVec2,f:F) {
+        let e1=self.instructions.remove_entry(&k1);
+        let e2=self.instructions.remove_entry(&k2);
+        e1.and_then(|(k,v)| self.instructions.insert(k2,f(v)));
+        e2.and_then(|(k,v)| self.instructions.insert(k1,f(v)));
+    }
 }

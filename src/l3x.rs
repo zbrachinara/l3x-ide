@@ -59,6 +59,7 @@ pub enum L3XParseError {
     UnaccountedCharacters,
     Empty,
 }
+#[derive(Clone)]
 
 pub enum MaybeL3X {
     Some(L3X),
@@ -106,6 +107,29 @@ impl Direction {
     /// If the direction is pointing in a positive axis. For macroquad this means down or right
     pub fn positive(&self) -> bool {
         matches!(self, Direction::Down | Direction::Right)
+    }
+
+    pub fn transpose(&self) -> Self {
+        match self {
+            Direction::Up => Direction::Left,
+            Direction::Down => Direction::Right,
+            Direction::Left => Direction::Up,
+            Direction::Right => Direction::Down,
+        }
+    }
+    pub fn reflectV(&self) -> Self {
+        match self {
+            Direction::Up => Direction::Down,
+            Direction::Down => Direction::Up,
+            _=>*self
+        }
+    }
+    pub fn reflectH(&self) -> Self {
+        match self {
+            Direction::Right => Direction::Left,
+            Direction::Left => Direction::Right,
+            _=>*self
+        }
     }
 }
 

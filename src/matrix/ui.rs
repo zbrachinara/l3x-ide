@@ -1,5 +1,5 @@
 use crate::{
-    l3x::{L3XCommand, L3X},
+    l3x::{L3XCommand, L3X, MaybeL3X},
     registers::Registers,
     traveler::Traveler,
     wasync::AsyncContext,
@@ -8,7 +8,7 @@ use egui::{CollapsingHeader, CollapsingResponse, Ui, WidgetText};
 use macroquad::prelude::*;
 use vec_drain_where::VecDrainWhereExt;
 
-use super::{Matrix, MatrixMode};
+use super::{Matrix, MatrixMode,MatrixAction};
 
 trait EguiExt {
     fn collapsing_open<R>(
@@ -192,7 +192,8 @@ impl Matrix {
                     {
                         log::warn!("In L3X mode, edited square *must* be a queue!")
                     } else {
-                        self.instructions.insert(location, serialize_success);
+                        //self.instructions.insert(location, serialize_success);
+                        self.apply(MatrixAction::Paste(location,super::L3XData { data: vec![vec![crate::l3x::MaybeL3X::Some(serialize_success)]], dims:uvec2(1,1) }));
                     }
                 } else {
                     log::warn!("Serialization failure")
@@ -242,7 +243,48 @@ impl Matrix {
     fn ui_edit_matrix(&mut self, ui: &mut Ui) {
         ui.checkbox(&mut self.gridlines, "Gridlines");
         if ui.button("transpose").clicked() {
-            self.transpose();
+            //self.transpose();
+            if let Some(selection)=self.selecting {
+                self.apply(MatrixAction::Transpose(selection));
+                self.selecting=Some(selection.transpose());
+            }
+        }
+        if ui.button("reflect horizontally").clicked() {
+            //self.transpose();
+            if let Some(selection)=self.selecting {
+                self.apply(MatrixAction::ReflectH(selection));
+            }
+        }
+        if ui.button("reflect vertically").clicked() {
+            //self.transpose();
+            if let Some(selection)=self.selecting {
+                self.apply(MatrixAction::ReflectV(selection));
+            }
+        }
+        if ui.button("clear").clicked() {
+            //self.transpose();
+            if let Some(selection)=self.selecting {
+                self.apply(MatrixAction::Paste(selection.starts,super::L3XData { data: vec![vec![MaybeL3X::None;selection.width() as usize];selection.height() as usize], dims: uvec2(selection.width() as u32,selection.height() as u32) }));
+            }
+        }
+        if ui.button("copy").clicked() {
+            if let Some(selection)=self.selecting {
+                let data=self.snip(selection);
+                self.copy_data=Some(data.clone());
+                self.apply_raw(MatrixAction::Paste(selection.starts,data));
+            }
+        }
+        if ui.button("paste").clicked() {
+            if let Some(selection)=self.selecting {
+                if let Some(data)=&self.copy_data {
+                    self.selecting=Some(super::Selection { starts: selection.starts, ends: selection.starts+ivec2(data.dims.x as i32-1,data.dims.y as i32-1) });
+                    self.apply(MatrixAction::Paste(selection.starts,data.clone()));
+                    
+                }
+            }
+        }
+        if ui.button("undo").clicked() {
+            self.undo();
         }
     }
 
@@ -324,7 +366,7 @@ impl Matrix {
         ui.collapsing_open("Output", |ui| self.ui_output_view(ui));
         ui.separator();
         ui.collapsing("About", |ui| {
-            ui.label("Authors: Eric Yu (zbrachinara), CJD13");
+            ui.label("Authors: Eric Yu (zbrachinara), Caleb Dastrup (CJD13)");
             ui.hyperlink_to("Github link", "https://github.com/zbrachinara/l3x-ide");
         });
     }
