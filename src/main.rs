@@ -8,7 +8,7 @@ use sound::signal::Updater;
 use wasync::AsyncContext;
 
 use crate::input::InputDriver;
-use crate::matrix::{Matrix, MatrixAction};
+use crate::matrix::{Matrix};
 
 mod input;
 mod l3x;
@@ -32,7 +32,7 @@ struct Model<'a> {
     input_driver: InputDriver,
     sound_handle: Updater,
     sound_needs_killing: bool,
-    resizing_matrix: bool,
+    resizing_matrix: Option<UVec2>,
     resizing_selection: bool,
     ctx: AsyncContext<'a>,
 }
@@ -46,7 +46,7 @@ impl<'a> Default for Model<'a> {
             scale: 1.0,
             sound_needs_killing: false,
             sound_handle: Updater::default(),
-            resizing_matrix: false,
+            resizing_matrix: None,
             resizing_selection: false,
             ctx: Default::default(),
         }
@@ -112,7 +112,7 @@ async fn main() {
                 (state.offset + state.matrix.dims.as_vec2() * CELL_SIZE) * state.scale;
             const ALLOWED_DISTANCE: f32 = 15.;
             if corner_position.distance_squared(physical) < (ALLOWED_DISTANCE * state.scale).powi(2) {
-                state.resizing_matrix = true;
+                state.resizing_matrix = Some(state.matrix.dims);
             } else if physical.cmpgt(state.offset).all() && physical.cmplt(corner_position).all() {
                 state
                     .matrix
@@ -143,14 +143,14 @@ async fn main() {
             state.sound_handle.update(Chord::default()).unwrap()
         }
 
-        if state.resizing_matrix {
+        if let Some(init_size)=state.resizing_matrix {
             if state.input_driver.lmb().held().is_some() {
                 state
                     .matrix
-                    .apply(MatrixAction::Resize((logical + Vec2::splat(0.5)).as_uvec2()));
+                    .set_dims((logical + Vec2::splat(0.5)).as_ivec2());
             } else {
-                state.matrix.finalize_resize();
-                state.resizing_matrix = false;
+                state.matrix.finalize_resize(init_size, (logical + Vec2::splat(0.5)).as_uvec2());
+                state.resizing_matrix = None;
             }
         }
 
