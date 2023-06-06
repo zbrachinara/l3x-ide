@@ -8,7 +8,7 @@ use sound::signal::Updater;
 use wasync::AsyncContext;
 
 use crate::input::InputDriver;
-use crate::matrix::Matrix;
+use crate::matrix::{Matrix, MatrixAction};
 
 mod input;
 mod l3x;
@@ -147,7 +147,7 @@ async fn main() {
             if state.input_driver.lmb().held().is_some() {
                 state
                     .matrix
-                    .set_dims((logical + Vec2::splat(0.5)).as_ivec2())
+                    .apply(MatrixAction::Resize((logical + Vec2::splat(0.5)).as_uvec2()));
             } else {
                 state.matrix.finalize_resize();
                 state.resizing_matrix = false;

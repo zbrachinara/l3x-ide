@@ -56,7 +56,7 @@ impl MatrixMode {
     }
 }
 #[derive(Clone)]
-struct L3XData {
+pub struct L3XData {
     data: Vec<Vec<MaybeL3X>>,
     dims: UVec2,
 }
@@ -72,7 +72,7 @@ impl std::ops::IndexMut<UVec2> for L3XData {
     }
 }
 //all should be copy except paste - I don't think this is possible
-enum MatrixAction {
+pub enum MatrixAction {
     Resize(UVec2),
     Swap(Selection, IVec2),
     ReflectH(Selection),
@@ -631,7 +631,7 @@ impl Matrix {
             }
         };
     }
-    fn apply(&mut self, a: MatrixAction) {
+    pub fn apply(&mut self, a: MatrixAction) {
         let inverse=a.inverse(self);
         self.apply_raw(a);
         self.history.push(inverse);
