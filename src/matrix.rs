@@ -10,7 +10,6 @@ use vec_drain_where::VecDrainWhereExt;
 
 mod file;
 mod ui;
-use core::cmp::{max,min};
 use crate::{
     l3x::{Direction, L3XCommand, MaybeL3X, L3X},
     registers::Registers,
@@ -19,6 +18,7 @@ use crate::{
     traveler::Traveler,
     wasync::AsyncContext,
 };
+use core::cmp::{max, min};
 
 use self::ui::{UiSingleInput, UiStreamInput};
 
@@ -92,7 +92,7 @@ impl MatrixAction {
                 *start,
                 current_state.snip(Selection {
                     starts: *start,
-                    ends: *start + data.dims.as_ivec2()-ivec2(1,1),
+                    ends: *start + data.dims.as_ivec2() - ivec2(1, 1),
                 }),
             ),
             //all other transformations are self-inverting
@@ -122,33 +122,36 @@ impl From<IVec2> for Selection {
 }
 
 impl Selection {
-    fn rect(&self, offset: Vec2, cell_size: f32, scale: f32) -> Rect {
-        let starts = (self.starts.as_vec2() * cell_size + offset) * scale;
-        let size = ((self.ends + IVec2::ONE - self.starts).as_vec2() * cell_size) * scale;
+    fn rect(&self, offset: Vec2, cell_size: f32) -> Rect {
+        let starts = (self.starts.as_vec2() * cell_size) + offset;
+        let size = (self.ends + IVec2::ONE - self.starts).as_vec2() * cell_size;
         Rect::new(starts.x, starts.y, size.x, size.y)
     }
 
     fn transpose(self) -> Self {
         Self {
             starts: self.starts,
-            ends: (self.ends-self.starts).yx()+self.starts,
+            ends: (self.ends - self.starts).yx() + self.starts,
         }
     }
 
     fn contains(&self, location: IVec2) -> bool {
         self.starts.cmple(location).all() && self.ends.cmpge(location).all()
     }
-    fn to(self,newStart:IVec2)->Self {
+
+    fn to(self, new_start: IVec2) -> Self {
         Self {
-            starts: newStart,
-            ends: newStart+self.ends-self.starts
+            starts: new_start,
+            ends: new_start + self.ends - self.starts,
         }
     }
-    fn width(&self) -> i32{
-        self.ends.x-self.starts.x+1
+
+    fn width(&self) -> i32 {
+        self.ends.x - self.starts.x + 1
     }
-    fn height(&self) -> i32{
-        self.ends.y-self.starts.y+1
+
+    fn height(&self) -> i32 {
+        self.ends.y - self.starts.y + 1
     }
 }
 
@@ -178,8 +181,8 @@ pub struct Matrix {
     sound_follows_cursor: bool,
     global_volume: u8,
     gridlines: bool,
-    history:Vec<MatrixAction>,
-    copy_data:Option<L3XData>
+    history: Vec<MatrixAction>,
+    copy_data: Option<L3XData>,
 }
 
 impl Default for Matrix {
@@ -205,8 +208,8 @@ impl Default for Matrix {
             global_volume: 80,
             gridlines: false,
             time: 0,
-            history:vec![],
-            copy_data:None
+            history: vec![],
+            copy_data: None,
         }
     }
 }
@@ -247,7 +250,7 @@ impl Matrix {
 
         // highlight selected square
         if let Some(range) = self.selecting {
-            let r = range.rect(offset, cell_size, scale); // TODO restrict rect to bounds of matrix
+            let r = range.rect(offset, cell_size); // TODO restrict rect to bounds of matrix
             draw_rectangle(r.x, r.y, r.w, r.h, LIGHTGRAY)
         }
 
@@ -560,92 +563,121 @@ impl Matrix {
         Ok(())
     }
     fn snip(&mut self, range: Selection) -> L3XData {
-        let mut res=vec![];
-        for i in range.starts.y..range.ends.y+1 {
+        let mut res = vec![];
+        for i in range.starts.y..range.ends.y + 1 {
             let mut row = vec![];
-            for j in range.starts.x..range.ends.x+1 {
+            for j in range.starts.x..range.ends.x + 1 {
                 row.push(MaybeL3X::from(
-                    self.instructions.remove(&IVec2::from((j,i)))
+                    self.instructions.remove(&IVec2::from((j, i))),
                 ));
             }
             res.push(row);
         }
         L3XData {
             data: res,
-            dims: UVec2::from((
-                range.width() as u32,
-                range.height() as u32
-            ))
+            dims: UVec2::from((range.width() as u32, range.height() as u32)),
         }
     }
     fn apply_raw(&mut self, a: MatrixAction) {
         match a {
             Resize(dims) => {
-                self.dims=dims;
-            },
-            Swap(selection,target) => {
+                self.dims = dims;
+            }
+            Swap(selection, target) => {
                 {
                     for i in 0..selection.height() {
                         for j in 0..selection.width() {
-                            self.swap_and_map(selection.starts+ivec2(j,i), target+ivec2(j,i),|c| c);
+                            self.swap_and_map(
+                                selection.starts + ivec2(j, i),
+                                target + ivec2(j, i),
+                                |c| c,
+                            );
                         }
                     }
                 };
-            },
+            }
             ReflectH(selection) => {
                 {
                     for i in 0..selection.height() {
-                        for j in 0..(selection.width()+1)/2 {
-                            self.swap_and_map(selection.starts+ivec2(j,i), selection.starts+ivec2(selection.width()-j-1, i),|mut c| {c.direction=c.direction.reflectH();c});
+                        for j in 0..(selection.width() + 1) / 2 {
+                            self.swap_and_map(
+                                selection.starts + ivec2(j, i),
+                                selection.starts + ivec2(selection.width() - j - 1, i),
+                                |mut c| {
+                                    c.direction = c.direction.reflectH();
+                                    c
+                                },
+                            );
                         }
                     }
                 };
-            },
+            }
             ReflectV(selection) => {
                 {
-                    for i in 0..(selection.height()+1)/2 {
+                    for i in 0..(selection.height() + 1) / 2 {
                         for j in 0..selection.width() {
-                            self.swap_and_map(selection.starts+ivec2(j,i), selection.starts+ivec2(j, selection.height()-i-1),|mut c| {c.direction=c.direction.reflectV();c});
+                            self.swap_and_map(
+                                selection.starts + ivec2(j, i),
+                                selection.starts + ivec2(j, selection.height() - i - 1),
+                                |mut c| {
+                                    c.direction = c.direction.reflectV();
+                                    c
+                                },
+                            );
                         }
                     }
                 };
-            },
+            }
             Transpose(selection) => {
                 {
-                    let width=max(selection.width(),selection.height());
-                    let height=min(selection.width(),selection.height());
-                    println!("{:?}",(width,height));
+                    let width = max(selection.width(), selection.height());
+                    let height = min(selection.width(), selection.height());
+                    println!("{:?}", (width, height));
                     for i in 0..height {
                         for j in i..width {
-                            println!("{:?}",(i,j));
-                            self.swap_and_map(selection.starts+ivec2(j,i), selection.starts+ivec2(i,j),|mut c| {c.direction=c.direction.transpose();c});
+                            println!("{:?}", (i, j));
+                            self.swap_and_map(
+                                selection.starts + ivec2(j, i),
+                                selection.starts + ivec2(i, j),
+                                |mut c| {
+                                    c.direction = c.direction.transpose();
+                                    c
+                                },
+                            );
                         }
                     }
                 };
-            },
+            }
             Paste(target, mut data) => {
                 for i in 0..data.dims.y {
                     for j in 0..data.dims.x {
-                        Option::<L3X>::from(data[uvec2(j,i)].optionalTake()).map_or(self.instructions.remove(&(target+ivec2(j as i32,i as i32))), |c| self.instructions.insert(target+ivec2(j as i32,i as i32),c));
+                        Option::<L3X>::from(data[uvec2(j, i)].optionalTake()).map_or(
+                            self.instructions
+                                .remove(&(target + ivec2(j as i32, i as i32))),
+                            |c| {
+                                self.instructions
+                                    .insert(target + ivec2(j as i32, i as i32), c)
+                            },
+                        );
                     }
                 }
             }
         };
     }
     fn apply(&mut self, a: MatrixAction) {
-        let inverse=a.inverse(self);
+        let inverse = a.inverse(self);
         self.apply_raw(a);
         self.history.push(inverse);
     }
-    
+
     pub fn undo(&mut self) {
-        let t=self.history.pop();
+        let t = self.history.pop();
         t.map_or((), |f| self.apply_raw(f))
     }
-    fn swap_and_map<F: Fn(L3X)->L3X>(&mut self,k1:IVec2,k2:IVec2,f:F) {
-        let e1=self.instructions.remove_entry(&k1);
-        let e2=self.instructions.remove_entry(&k2);
-        e1.and_then(|(k,v)| self.instructions.insert(k2,f(v)));
-        e2.and_then(|(k,v)| self.instructions.insert(k1,f(v)));
+    fn swap_and_map<F: Fn(L3X) -> L3X>(&mut self, k1: IVec2, k2: IVec2, f: F) {
+        let e1 = self.instructions.remove_entry(&k1);
+        let e2 = self.instructions.remove_entry(&k2);
+        e1.and_then(|(k, v)| self.instructions.insert(k2, f(v)));
+        e2.and_then(|(k, v)| self.instructions.insert(k1, f(v)));
     }
 }
